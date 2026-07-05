@@ -9,12 +9,12 @@ This project is built as a production-quality hackathon MVP using **Next.js (App
 
 ## 🏗️ Technical Architecture & Stack
 
-- **Frontend**: Next.js App Router (TypeScript), Tailwind CSS, Leaflet.js (React-Leaflet) with CartoDB Dark Matter map styling, Lucide Icons, and Recharts.
+- **Frontend**: Next.js App Router (TypeScript), Tailwind CSS, Leaflet.js (React-Leaflet) with Esri World Imagery Satellite Map styling, Lucide Icons, and Recharts.
 - **Backend & APIs**: Next.js Serverless Route Handlers (`app/api/*`) exposing clean REST endpoints.
 - **Database Layer**: SQLite powered by Prisma 7. The setup leverages a custom driver adapter (`better-sqlite3`) to connect serverless functions.
 - **AI & Analytics**: 
   - Dynamic mathematical risk engine that computes real-time hazard levels using rainfall, elevation, citizen reports, and historical data.
-  - Keyword/semantic heuristic AI classifier simulating a computer vision model that labels citizen descriptions (e.g., classifying text into `FLOODED_ROAD` or `BLOCKED_DRAIN`).
+  - HuggingFace inference pipeline connecting to zero-shot classification model (`facebook/bart-large-mnli`) to dynamically classify descriptions (e.g., classifying text into `FLOODED_ROAD` or `BLOCKED_DRAIN`) with simulated latency fallbacks.
 
 ---
 
@@ -26,7 +26,7 @@ The project has been initialized and organized with modular clean-code practices
 ├── prisma/
 │   ├── dev.db              # SQLite Local Database file
 │   ├── schema.prisma       # Prisma 7 Database schema definitions
-│   └── seed.ts             # Seeding script with mock wards (polygons), users, & incidents
+│   └── seed.ts             # Seeding script with MCGM South Mumbai wards & incidents
 ├── public/
 │   └── uploads/            # Target directory for simulated/actual image uploads
 ├── src/
@@ -50,6 +50,7 @@ The project has been initialized and organized with modular clean-code practices
 │   │   └── Navigation.tsx  # Dynamic header linking pages with real-time warning banners
 │   ├── services/
 │   │   ├── db.ts           # Centralized PrismaClient singleton using better-sqlite3 adapter
+│   │   ├── aiService.ts    # Zero-shot HuggingFace AI classification pipeline wrapper
 │   │   ├── riskEngine.ts   # Core algorithms for risk scoring and heuristic classification
 │   │   └── wardHelper.ts   # Point-in-polygon math & dynamic ward recalculation handler
 ```
@@ -62,6 +63,25 @@ The project has been initialized and organized with modular clean-code practices
 - **`Ward`**: Represents administrative boundary zones. Stores GeoJSON boundary polygons, dynamic risk scores, and qualitative risk levels (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`).
 - **`IncidentReport`**: Incident logs containing reporting GPS coordinates, reporter details, descriptions, image paths, AI classification results (label and confidence score), status (`REPORTED`, `INVESTIGATING`, `DISPATCHED`, `RESOLVED`), and assigned agency.
 - **`EmergencyAlert`**: Broadcast messages showing critical city warning banners.
+
+---
+
+## 📍 MCGM South Mumbai Ward Scope (Demo Context)
+
+The map and database seed are pre-configured to focus on **South Mumbai limits (MCGM Wards A, B, and C)**:
+
+1. **Wards Configured**:
+   - **Ward A**: Colaba / Fort / Churchgate (High risk, sea levels and subway networks)
+   - **Ward B**: Sandhurst Road / Crawford Market (Critical risk, low-lying basin)
+   - **Ward C**: Marine Lines / Metro Cinema (Medium risk, urban spillover drains)
+2. **Pre-Seeded Waterlogging Hotspots**:
+   - **Crawford Market**: Storm drainage choked (Ward B)
+   - **Churchgate Station Subway**: Foot traffic blockage (Ward A)
+   - **Ballard Estate**: Service road flooding (Ward A)
+   - **Metro Cinema Junction**: Road traffic stalled (Ward C)
+   - **Mantralaya Administrative Gate**: Surface water pooling (Ward A)
+3. **Simulated Commute Corridor**:
+   - Commute detours are mapped between **Churchgate Station (Ward A)** and **Crawford Market (Ward B)**, dynamically bypassing active flood points.
 
 ---
 
@@ -88,12 +108,12 @@ The project has been initialized and organized with modular clean-code practices
 ## ⚙️ Heuristics & Scoring Formulas
 
 ### A. Ward Risk Formula (RiskEngine)
-$$\text{Risk Score (0-100)} = R_{rainfall} (35\%) + E_{elevation} (25\%) + P_{proximity} (20\%) + R_{reports} (12\%) + H_{history} (8\%)$$
-1. **Rainfall**: Linearly scaled up to 50 mm/hr (max 35 points).
-2. **Elevation**: Inverted scale; lower altitude increases risk (max 25 points).
-3. **Proximity to Drains/River**: Inverted distance scale; closer proximity increases risk (max 20 points).
-4. **Active Citizen Reports**: Scaled based on active reports in the area (max 12 points).
-5. **Historical Frequency**: Vulnerability modifier based on past incidents (max 8 points).
+$$\text{Risk Score (0-100)} = R_{rainfall} (30\%) + E_{elevation} (20\%) + P_{proximity} (20\%) + R_{reports} (15\%) + H_{history} (15\%)$$
+1. **Rainfall**: Linearly scaled up to 50 mm/hr (max 30 points).
+2. **Elevation**: Inverted scale; lower altitude increases risk (max 20 points).
+3. **Proximity to Sea/Water discharge**: Inverted distance scale; closer proximity increases risk (max 20 points).
+4. **Active Citizen Reports**: Scaled based on active reports in the area (max 15 points).
+5. **Historical Frequency**: Vulnerability modifier based on past incidents (max 15 points).
 
 ### B. Heuristic AI Classifier (Image/Text)
 Scans description keywords for visual tokens:
