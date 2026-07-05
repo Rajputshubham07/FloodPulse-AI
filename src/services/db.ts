@@ -1,13 +1,14 @@
 import { PrismaClient } from "../generated/prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
-import pg from "pg";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import Database from "better-sqlite3";
+import path from "path";
 
+// Ensure a single PrismaClient is used in Next.js development
 const globalForPrisma = global as unknown as { prisma: PrismaClient | undefined };
 
-// Configure connection pool from env connection string
-const connectionString = process.env.DATABASE_URL;
-const pool = new pg.Pool({ connectionString });
-const adapter = new PrismaPg(pool);
+const dbPath = path.resolve(process.cwd(), "prisma", "dev.db");
+const sqlite = new Database(dbPath);
+const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
 
 export const prisma = globalForPrisma.prisma || new PrismaClient({ adapter });
 

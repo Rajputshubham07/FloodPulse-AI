@@ -5,14 +5,14 @@ import { calculateRiskScore } from "../../../services/riskEngine";
 
 // Helper to extract static attributes based on ward name
 function getWardPhysicalAttributes(name: string) {
-  if (name.includes("Downtown")) {
-    return { elevation: 15, proximityToWater: 300, historicalFrequency: 5 };
-  } else if (name.includes("Riverfront")) {
-    return { elevation: 5, proximityToWater: 50, historicalFrequency: 12 };
-  } else if (name.includes("Industrial")) {
-    return { elevation: 8, proximityToWater: 150, historicalFrequency: 8 };
+  if (name.includes("Mahadevapura")) {
+    return { elevation: 870, proximityToWater: 150, historicalFrequency: 18 };
+  } else if (name.includes("Bommanahalli")) {
+    return { elevation: 882, proximityToWater: 300, historicalFrequency: 12 };
+  } else if (name.includes("Indiranagar")) {
+    return { elevation: 910, proximityToWater: 800, historicalFrequency: 4 };
   } else {
-    return { elevation: 45, proximityToWater: 800, historicalFrequency: 2 };
+    return { elevation: 920, proximityToWater: 1200, historicalFrequency: 2 };
   }
 }
 

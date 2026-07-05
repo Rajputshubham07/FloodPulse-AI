@@ -31,6 +31,18 @@ const getRiskColor = (level: string) => {
   }
 };
 
+const BENGALURU_OUTER_LIMITS: [number, number][] = [
+  [12.86, 77.54],
+  [12.86, 77.68],
+  [12.93, 77.74],
+  [13.04, 77.74],
+  [13.07, 77.66],
+  [13.07, 77.53],
+  [12.98, 77.49],
+  [12.90, 77.49],
+  [12.86, 77.54]
+];
+
 // Component to dynamically adjust map view when a selected incident changes
 function MapViewUpdater({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
@@ -71,8 +83,8 @@ export default function InteractiveMap({
   reportCoordinates,
   safeRoutePath
 }: InteractiveMapProps) {
-  const [mapCenter, setMapCenter] = useState<[number, number]>([42.355, -71.055]);
-  const [mapZoom, setMapZoom] = useState<number>(13);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([12.9716, 77.5946]);
+  const [mapZoom, setMapZoom] = useState<number>(11);
 
   // Set center to selected incident if specified
   useEffect(() => {
@@ -96,6 +108,18 @@ export default function InteractiveMap({
         <TileLayer
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        />
+
+        {/* Bengaluru City Limits Outer Boundary */}
+        <Polygon
+          positions={BENGALURU_OUTER_LIMITS}
+          pathOptions={{
+            color: "#ffffff",
+            weight: 3,
+            dashArray: "10, 15",
+            fill: false,
+            interactive: false
+          }}
         />
 
         {/* Dynamic click handler for pinning incident reports */}

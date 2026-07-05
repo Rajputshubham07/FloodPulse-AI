@@ -70,7 +70,7 @@ export default function CitizenPage() {
       (error) => {
         console.error("Geolocation error:", error);
         // Fallback to center of mock city for hackathon simplicity if GPS is denied
-        setReportCoords([42.356, -71.054]);
+        setReportCoords([12.9716, 77.5946]);
         setLocating(false);
       },
       { enableHighAccuracy: true, timeout: 6000 }
@@ -122,11 +122,11 @@ export default function CitizenPage() {
   };
 
   const handleSimulateRoute = async () => {
-    // Boston mock coordinates: Downtown to Riverfront
-    const startLat = 42.358;
-    const startLng = -71.061;
-    const endLat = 42.353;
-    const endLng = -71.042;
+    // Bengaluru coordinates: Indiranagar (East Zone) to Bellandur ORR (IT Corridor)
+    const startLat = 12.972;
+    const startLng = 77.640;
+    const endLat = 12.928;
+    const endLng = 77.680;
 
     try {
       const res = await fetch(`/api/safe-route?startLat=${startLat}&startLng=${startLng}&endLat=${endLat}&endLng=${endLng}`);
