@@ -9,7 +9,6 @@ export function isPointInPolygon(latitude: number, longitude: number, polygonCoo
   const y = latitude;
   let inside = false;
 
-  // We loop through each ring of the polygon (typically only 1 ring for simple wards)
   for (const ring of polygonCoordinates) {
     for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
       const xi = ring[i][0];
@@ -27,11 +26,35 @@ export function isPointInPolygon(latitude: number, longitude: number, polygonCoo
 }
 
 /**
- * Finds which ward a coordinate belongs to.
+ * Determines which ward a coordinate belongs to.
+ * Automatically switches between PostGIS raw queries (if PostgreSQL is configured)
+ * and Ray-casting JS calculations (for local SQLite development).
  */
 export async function findWardForCoordinate(latitude: number, longitude: number): Promise<string | null> {
-  const wards = await prisma.ward.findMany();
+  const isPostgres = process.env.DATABASE_URL?.startsWith("postgres") || false;
 
+  if (isPostgres) {
+    console.log(`[Geospatial Layer] Executing PostGIS ST_Contains query for coordinate: (${latitude}, ${longitude})`);
+    try {
+      // In PostGIS, we parse the stored JSON boundary using ST_GeomFromGeoJSON and verify inclusion
+      const result = await prisma.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM "Ward" 
+        WHERE ST_Contains(
+          ST_SetSRID(ST_GeomFromGeoJSON(boundaryJson), 4326), 
+          ST_SetSRID(ST_Point(${longitude}, ${latitude}), 4326)
+        ) 
+        LIMIT 1;
+      `;
+      if (result && result.length > 0) {
+        return result[0].id;
+      }
+    } catch (err) {
+      console.warn("[Geospatial Layer] PostGIS ST_Contains query failed, falling back to JS math.", err);
+    }
+  }
+
+  // Fallback / SQLite mode: Ray-casting
+  const wards = await prisma.ward.findMany();
   for (const ward of wards) {
     try {
       const geojson = JSON.parse(ward.boundaryJson);

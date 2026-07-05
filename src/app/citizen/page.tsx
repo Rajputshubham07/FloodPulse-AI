@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import Navigation from "../../components/Navigation";
 import MapLoader from "../../components/MapLoader";
-import { Navigation as RouteIcon, ShieldCheck, MapPin, AlertCircle, Sparkles, Send, Plus, CheckCircle, Map } from "lucide-react";
+import { 
+  Navigation as RouteIcon, ShieldCheck, MapPin, AlertCircle, Sparkles, 
+  Send, Plus, CheckCircle, Map, Crosshair, Compass, ShieldAlert
+} from "lucide-react";
 
 export default function CitizenPage() {
   const [wards, setWards] = useState<any[]>([]);
@@ -17,13 +20,14 @@ export default function CitizenPage() {
   const [reportCoords, setReportCoords] = useState<[number, number] | null>(null);
   const [reportResult, setReportResult] = useState<any | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [locating, setLocating] = useState(false);
 
   // Routing state
   const [safeRoute, setSafeRoute] = useState<[number, number][] | undefined>(undefined);
   const [routeInfo, setRouteInfo] = useState<string | null>(null);
   const [routingActive, setRoutingActive] = useState(false);
+  const [detoursAvoided, setDetoursAvoided] = useState<number>(0);
 
-  // Load wards and incidents
   const loadData = () => {
     fetch("/api/wards")
       .then((res) => res.json())
@@ -40,27 +44,47 @@ export default function CitizenPage() {
 
   useEffect(() => {
     loadData();
-    // Poll for changes every 10 seconds to look alive
     const interval = setInterval(loadData, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // Handle map click to pin coordinates
   const handleMapClick = (lat: number, lng: number) => {
     if (showReportForm) {
       setReportCoords([lat, lng]);
     }
   };
 
-  // Submit incident report
+  // Browser Geolocation Autofill
+  const handleAutoGeolocate = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setReportCoords([position.coords.latitude, position.coords.longitude]);
+        setLocating(false);
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        // Fallback to center of mock city for hackathon simplicity if GPS is denied
+        setReportCoords([42.356, -71.054]);
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 6000 }
+    );
+  };
+
   const handleSubmitReport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reportCoords) {
-      alert("Please click on the map to set your report coordinates.");
+      alert("Please drop a pin on the map or click Locate Me.");
       return;
     }
     if (!description.trim()) {
-      alert("Please provide a description of the issue.");
+      alert("Please enter a description.");
       return;
     }
 
@@ -85,7 +109,7 @@ export default function CitizenPage() {
         setReporterName("");
         setReporterPhone("");
         setReportCoords(null);
-        loadData(); // reload map points
+        loadData();
       } else {
         alert(data.error || "Failed to submit report");
       }
@@ -97,9 +121,8 @@ export default function CitizenPage() {
     }
   };
 
-  // Simulate routing
   const handleSimulateRoute = async () => {
-    // Boston coordinates simulation: from Downtown Core (42.358, -71.061) to Riverfront East (42.353, -71.042)
+    // Boston mock coordinates: Downtown to Riverfront
     const startLat = 42.358;
     const startLng = -71.061;
     const endLat = 42.353;
@@ -111,6 +134,7 @@ export default function CitizenPage() {
       if (res.ok) {
         setSafeRoute(data.path);
         setRouteInfo(data.message);
+        setDetoursAvoided(data.criticalIncidentsAvoided || 0);
         setRoutingActive(true);
       }
     } catch (e) {
@@ -121,6 +145,7 @@ export default function CitizenPage() {
   const handleClearRoute = () => {
     setSafeRoute(undefined);
     setRouteInfo(null);
+    setDetoursAvoided(0);
     setRoutingActive(false);
   };
 
@@ -128,10 +153,9 @@ export default function CitizenPage() {
     <div className="flex-1 flex flex-col bg-slate-950 text-slate-100 min-h-screen">
       <Navigation />
 
-      {/* Main Map + UI grid */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 overflow-hidden relative">
         
-        {/* Map Panel (takes full width, or 3 cols) */}
+        {/* Map visualizer */}
         <div className="lg:col-span-3 h-[calc(100vh-3.5rem)] relative">
           <MapLoader
             wards={wards}
@@ -141,65 +165,72 @@ export default function CitizenPage() {
             safeRoutePath={safeRoute}
           />
 
-          {/* Floating Action Button (FAB) on mobile maps */}
           {!showReportForm && (
             <button
               onClick={() => {
                 setShowReportForm(true);
                 setReportResult(null);
               }}
-              className="absolute top-4 right-4 z-[1000] bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-4 py-2.5 rounded-xl font-bold text-xs shadow-lg flex items-center gap-1.5 border border-emerald-400 transition-all pointer-events-auto"
+              className="absolute top-4 right-4 z-[1000] bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-4 py-2.5 rounded-xl font-bold text-xs shadow-lg flex items-center gap-1.5 border border-emerald-400 transition-all cursor-pointer"
             >
               <Plus className="h-4 w-4 stroke-[3]" />
-              Report Flood/Drain Issue
+              Report Local Hazard
             </button>
           )}
         </div>
 
-        {/* Sidebar Panel */}
+        {/* Sidebar Controls */}
         <div className="border-t lg:border-t-0 lg:border-l border-slate-900 bg-slate-950/60 backdrop-blur-md p-5 flex flex-col justify-between overflow-y-auto h-[calc(100vh-3.5rem)]">
           <div className="space-y-6">
             
-            {/* Standard Header */}
             <div>
-              <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-widest">
+              <span className="text-[10px] text-emerald-400 font-extrabold uppercase tracking-widest flex items-center gap-1">
+                <Compass className="h-3.5 w-3.5" />
                 Citizen Portal
               </span>
-              <h2 className="text-xl font-bold mt-1 text-slate-100">Hyperlocal Safety</h2>
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                Check neighborhood water levels, report street flooding, and navigate low-risk paths.
+              <h2 className="text-xl font-bold mt-1 text-slate-100">Resilient Navigation</h2>
+              <p className="text-xs text-slate-400 mt-1">
+                Monitor local storm drains, file flood reports, and route safely around waterlogged streets.
               </p>
             </div>
 
-            {/* Dynamic Routing widget */}
-            <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-900">
+            {/* Safe Detour Router */}
+            <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-900 space-y-3">
               <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
                 <RouteIcon className="h-4 w-4 text-emerald-400" />
-                Resilient Route Planner
+                Emergency Detour Planner
               </h3>
-              <p className="text-[11px] text-slate-400 mt-1.5">
-                Calculate an intelligent route that shifts around reported flooded roads.
+              <p className="text-[11px] text-slate-400 leading-normal">
+                Avoid active high-water hazards. Compute a low-risk transit path detour instantly.
               </p>
 
               {!routingActive ? (
                 <button
                   onClick={handleSimulateRoute}
-                  className="w-full mt-3 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                  className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Map className="h-3.5 w-3.5" />
-                  Simulate Commute (Avoiding Flood)
+                  Simulate Safe Path (Downtown &rarr; Harbor)
                 </button>
               ) : (
-                <div className="mt-3 space-y-2">
-                  <div className="text-[11px] bg-emerald-950/30 border border-emerald-800/40 text-emerald-400 p-2.5 rounded-lg flex items-start gap-1.5">
-                    <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5" />
-                    <span>{routeInfo}</span>
+                <div className="space-y-2">
+                  <div className="text-[11px] bg-emerald-950/20 border border-emerald-900/40 text-emerald-400 p-3 rounded-lg space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-400" />
+                      <span>Low-Risk Route Active</span>
+                    </div>
+                    <p className="text-slate-300 leading-normal">{routeInfo}</p>
+                    {detoursAvoided > 0 && (
+                      <span className="inline-block bg-emerald-900/40 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-800/30">
+                        Bypassed {detoursAvoided} Critical Blockage
+                      </span>
+                    )}
                   </div>
                   <button
                     onClick={handleClearRoute}
-                    className="w-full bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all"
+                    className="w-full bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 py-1.5 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer"
                   >
-                    Clear Route Overlay
+                    Reset Route Overlay
                   </button>
                 </div>
               )}
@@ -217,68 +248,86 @@ export default function CitizenPage() {
                       setShowReportForm(false);
                       setReportCoords(null);
                     }}
-                    className="text-[10px] text-slate-500 hover:text-slate-300"
+                    className="text-[10px] text-slate-500 hover:text-slate-300 font-bold"
                   >
                     Close
                   </button>
                 </div>
 
                 {reportResult ? (
-                  // Success State
-                  <div className="space-y-3 py-2">
+                  /* Success Feedback */
+                  <div className="space-y-3 py-1">
                     <div className="flex items-center gap-2 text-emerald-400">
                       <CheckCircle className="h-5 w-5" />
-                      <span className="font-bold text-xs">Report Filed Successfully!</span>
+                      <span className="font-bold text-xs">Report Logged Successfully!</span>
                     </div>
-                    <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-1.5 text-[11px]">
+                    
+                    {reportResult.severity === "CRITICAL" && (
+                      <div className="bg-red-950/20 border border-red-900/40 text-red-400 p-2 rounded-lg text-[10px] flex items-start gap-1.5 font-semibold">
+                        <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
+                        <span>Warning: AI classified this incident as critical hazard. Local emergency services have been dispatched.</span>
+                      </div>
+                    )}
+
+                    <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-900 space-y-1.5 text-[10px]">
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Auto Classification:</span>
-                        <strong className="text-slate-200">{reportResult.aiLabel}</strong>
+                        <span className="text-slate-500">Zero-Shot Match:</span>
+                        <strong className="text-slate-200 uppercase">{reportResult.aiLabel}</strong>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-500">AI Confidence:</span>
+                        <span className="text-slate-500">Model Confidence:</span>
                         <strong className="text-slate-200">{Math.round(reportResult.aiConfidence * 100)}%</strong>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Priority Level:</span>
-                        <strong className="text-red-400">{reportResult.severity}</strong>
+                        <span className="text-slate-500">Ward Assessment:</span>
+                        <strong className="text-slate-200">{reportResult.ward?.name || "Unassigned"}</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">Report Status:</span>
+                        <strong className="text-emerald-400">{reportResult.status}</strong>
                       </div>
                     </div>
-                    <p className="text-[10px] text-slate-400 leading-relaxed">
-                      Thank you. Your report has been geo-coded and routed to the municipal engineering pipeline.
-                    </p>
+                    
                     <button
                       onClick={() => setReportResult(null)}
-                      className="w-full bg-slate-800 hover:bg-slate-700 py-1.5 text-slate-200 rounded text-[11px] font-semibold"
+                      className="w-full bg-slate-800 hover:bg-slate-700 py-1.5 text-slate-200 rounded text-[11px] font-semibold cursor-pointer"
                     >
                       File Another Report
                     </button>
                   </div>
                 ) : (
-                  // Active Form
-                  <form onSubmit={handleSubmitReport} className="space-y-3.5">
-                    {/* Location picker prompt */}
-                    <div className={`p-2.5 rounded-lg border text-center transition-all ${
-                      reportCoords 
-                        ? "bg-slate-950/80 border-slate-800 text-slate-300" 
-                        : "bg-emerald-950/20 border-emerald-500/20 text-emerald-400 animate-pulse"
-                    }`}>
-                      <MapPin className="h-4 w-4 mx-auto mb-1 text-emerald-400" />
-                      <p className="text-[10px] font-semibold">
+                  /* Form */
+                  <form onSubmit={handleSubmitReport} className="space-y-3">
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={handleAutoGeolocate}
+                        disabled={locating}
+                        className="col-span-2 bg-slate-950 hover:bg-slate-900 border border-slate-800 text-slate-300 py-2 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Crosshair className={`h-3.5 w-3.5 text-emerald-400 ${locating ? "animate-spin" : ""}`} />
+                        {locating ? "Accessing GPS..." : "Locate Me (Autofill)"}
+                      </button>
+
+                      <div className={`col-span-2 p-2.5 rounded-lg border text-center text-[10px] font-bold ${
+                        reportCoords ? "bg-slate-950 border-slate-850 text-slate-300" : "bg-emerald-950/20 border-emerald-500/20 text-emerald-400 animate-pulse"
+                      }`}>
+                        <MapPin className="h-3.5 w-3.5 mx-auto mb-1 text-emerald-400" />
                         {reportCoords 
-                          ? `Location Pinned: ${reportCoords[0].toFixed(5)}, ${reportCoords[1].toFixed(5)}` 
-                          : "CLICK ON MAP to drop incident pin"}
-                      </p>
+                          ? `Lat: ${reportCoords[0].toFixed(5)}, Lng: ${reportCoords[1].toFixed(5)}` 
+                          : "CLICK ON MAP to set coordinates"}
+                      </div>
                     </div>
 
                     <div>
-                      <label className="block text-[10px] text-slate-400 font-bold uppercase mb-1">
+                      <label className="block text-[9px] text-slate-400 font-bold uppercase mb-1">
                         Describe waterlogging or drain issue *
                       </label>
                       <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="e.g. Clogged sewer grates with plastic waste, water reaching sidewalk level."
+                        placeholder="e.g. Grate is clogged with debris. Water pooling on road."
                         rows={3}
                         required
                         className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
@@ -287,7 +336,7 @@ export default function CitizenPage() {
 
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="block text-[10px] text-slate-400 font-bold uppercase mb-1">Your Name</label>
+                        <label className="block text-[9px] text-slate-450 font-bold uppercase mb-1">Your Name</label>
                         <input
                           type="text"
                           value={reporterName}
@@ -297,7 +346,7 @@ export default function CitizenPage() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] text-slate-400 font-bold uppercase mb-1">Mobile #</label>
+                        <label className="block text-[9px] text-slate-455 font-bold uppercase mb-1">Mobile #</label>
                         <input
                           type="text"
                           value={reporterPhone}
@@ -308,19 +357,18 @@ export default function CitizenPage() {
                       </div>
                     </div>
 
-                    {/* AI Tag indicator */}
                     <div className="text-[9px] text-slate-500 flex items-center gap-1">
                       <Sparkles className="h-3 w-3 text-emerald-400" />
-                      <span>FloodPulse AI will automatically categorize your photo and description.</span>
+                      <span>Inference engine: Bart Zero-Shot classifier.</span>
                     </div>
 
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-800 disabled:text-slate-500 text-slate-950 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md"
+                      className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-850 disabled:text-slate-550 text-slate-950 py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md cursor-pointer"
                     >
                       <Send className="h-3 w-3" />
-                      {isSubmitting ? "Uploading & Analysing..." : "Submit Incident Report"}
+                      {isSubmitting ? "Processing AI Analysis..." : "Submit Incident"}
                     </button>
                   </form>
                 )}
@@ -329,11 +377,10 @@ export default function CitizenPage() {
 
           </div>
 
-          {/* Quick instructions */}
-          <div className="pt-4 border-t border-slate-900 text-[10px] text-slate-500 space-y-1">
-            <div className="flex items-center gap-1">
-              <AlertCircle className="h-3 w-3 text-red-500" />
-              <span>In case of severe threat to life, dial emergency services immediately.</span>
+          <div className="pt-4 border-t border-slate-900 text-[10px] text-slate-500 space-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <AlertCircle className="h-3.5 w-3.5 text-red-500" />
+              <span>In case of severe threat, dial emergency lines.</span>
             </div>
           </div>
 
