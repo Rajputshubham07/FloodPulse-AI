@@ -31,18 +31,18 @@ export default function LandingPage() {
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 relative z-10 flex flex-col justify-center items-center text-center">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-950/30 text-emerald-400 text-xs font-semibold mb-6">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-          Smart City Resilience Engine
+          MCGM Mumbai South Operations
         </div>
 
         <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight max-w-4xl text-slate-100 leading-[1.1]">
-          Hyperlocal Flood & Drainage{" "}
+          Mumbai South Flood & Drainage{" "}
           <span className="bg-gradient-to-r from-blue-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
             Risk Intelligence
           </span>
         </h1>
 
         <p className="mt-6 text-base sm:text-lg text-slate-400 max-w-2xl leading-relaxed">
-          Empowering citizens, municipal authorities, and emergency response teams to detect, monitor, and mitigate urban waterlogging and drainage issues in real time.
+          Empowering citizens, MCGM ward engineers, and disaster response teams to monitor, report, and mitigate waterlogging at hotspots (Crawford Market, Churchgate, Ballard Estate) in real time.
         </p>
 
         {/* Modules Cards Grid */}
