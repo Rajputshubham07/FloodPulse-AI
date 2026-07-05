@@ -1,9 +1,10 @@
 import { PrismaClient } from "../src/generated/prisma/client";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import path from "path";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 
-const dbPath = path.resolve(process.cwd(), "prisma", "dev.db");
-const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
+const connectionString = process.env.DATABASE_URL;
+const pool = new pg.Pool({ connectionString });
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 const mockWards = [
@@ -189,9 +190,7 @@ async function main() {
   });
 
   console.log("Seeding Incidents...");
-  // Link incidents to wards based on simple coordinate boundaries or matching name
   for (const incidentData of mockIncidents) {
-    // Basic assignment based on latitude/longitude
     let assignedWardId: string | null = null;
     if (incidentData.latitude > 42.354 && incidentData.longitude < -71.050) {
       assignedWardId = wards.find(w => w.name.includes("Downtown"))?.id || null;
@@ -205,7 +204,7 @@ async function main() {
       data: {
         ...incidentData,
         wardId: assignedWardId,
-        imageUrl: "/demo-flood.jpg" // placeholder image in public uploads
+        imageUrl: "/demo-flood.jpg"
       }
     });
   }
@@ -236,4 +235,5 @@ main()
   })
   .finally(async () => {
     await prisma.$disconnect();
+    pool.end();
   });
