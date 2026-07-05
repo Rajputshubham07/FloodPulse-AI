@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      String   // CITIZEN, MUNICIPAL_OFFICIAL, DISASTER_TEAM
+  createdAt DateTime @default(now())
+}
+
+model IncidentReport {
+  id            String   @id @default(uuid())
+  reporterName  String?
+  reporterPhone String?
+  latitude      Float
+  longitude     Float
+  description   String
+  imageUrl      String?
+  aiLabel       String   // DRY, MINOR_WATERLOGGING, MAJOR_WATERLOGGING, BLOCKED_DRAIN, FLOODED_ROAD
+  aiConfidence  Float
+  severity      String   // LOW, MEDIUM, HIGH, CRITICAL
+  status        String   // REPORTED, INVESTIGATING, DISPATCHED, RESOLVED
+  wardId        String?
+  assignedTo    String?  // Name of agency or official
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  ward          Ward?    @relation(fields: [wardId], references: [id])
+}
+
+model Ward {
+  id            String           @id @default(uuid())
+  name          String           @unique
+  boundaryJson  String           // GeoJSON representation of ward boundary
+  riskScore     Float            // 0.0 to 100.0
+  riskLevel     String           // LOW, MEDIUM, HIGH, CRITICAL
+  reports       IncidentReport[]
+  lastUpdated   DateTime         @default(now())
+}
+
+model EmergencyAlert {
+  id          String   @id @default(uuid())
+  title       String
+  message     String
+  severity    String   // INFO, WARNING, DANGER
+  wardId      String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
