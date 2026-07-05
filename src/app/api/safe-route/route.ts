@@ -29,12 +29,15 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Valid startLat, startLng, endLat, and endLng are required" }, { status: 400 });
     }
 
-    // 1. Fetch active incidents (warnings, flooded roads, high severity)
+    const cityId = searchParams.get("cityId");
+    const where: any = {
+      status: { not: "RESOLVED" },
+      severity: { in: ["HIGH", "CRITICAL"] }
+    };
+    if (cityId) where.cityId = cityId;
+
     const criticalIncidents = await prisma.incidentReport.findMany({
-      where: {
-        status: { not: "RESOLVED" },
-        severity: { in: ["HIGH", "CRITICAL"] }
-      }
+      where
     });
 
     // 2. Generate a baseline route with 5 waypoints

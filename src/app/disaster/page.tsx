@@ -9,6 +9,7 @@ export default function DisasterPage() {
   const [wards, setWards] = useState<any[]>([]);
   const [incidents, setIncidents] = useState<any[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [activeCityId, setActiveCityId] = useState<string>("");
 
   // Alert broadcast form state
   const [alertTitle, setAlertTitle] = useState("");
@@ -17,20 +18,23 @@ export default function DisasterPage() {
   const [targetWardId, setTargetWardId] = useState("");
   const [isBroadcasting, setIsBroadcasting] = useState(false);
 
-  const loadData = () => {
-    fetch("/api/wards")
+  const loadData = (targetCityId?: string) => {
+    const cityIdToUse = targetCityId || activeCityId || localStorage.getItem("floodpulse_city") || "";
+    if (!cityIdToUse) return;
+
+    fetch(`/api/wards?cityId=${cityIdToUse}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setWards(data);
       });
 
-    fetch("/api/incidents")
+    fetch(`/api/incidents?cityId=${cityIdToUse}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setIncidents(data);
       });
 
-    fetch("/api/alerts")
+    fetch(`/api/alerts?cityId=${cityIdToUse}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setAlerts(data);
@@ -38,10 +42,29 @@ export default function DisasterPage() {
   };
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 10000);
-    return () => clearInterval(interval);
+    const initialCityId = localStorage.getItem("floodpulse_city") || "";
+    setActiveCityId(initialCityId);
+    if (initialCityId) {
+      loadData(initialCityId);
+    }
+
+    const handleCityChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setActiveCityId(customEvent.detail);
+        setTargetWardId("");
+      }
+    };
+    window.addEventListener("cityChanged", handleCityChange);
+    return () => window.removeEventListener("cityChanged", handleCityChange);
   }, []);
+
+  useEffect(() => {
+    if (!activeCityId) return;
+    loadData(activeCityId);
+    const interval = setInterval(() => loadData(activeCityId), 10000);
+    return () => clearInterval(interval);
+  }, [activeCityId]);
 
   const handleBroadcastAlert = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,7 +82,8 @@ export default function DisasterPage() {
           title: alertTitle,
           message: alertMessage,
           severity: alertSeverity,
-          wardId: targetWardId || null
+          wardId: targetWardId || null,
+          cityId: activeCityId
         })
       });
 

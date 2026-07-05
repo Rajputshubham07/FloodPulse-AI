@@ -9,15 +9,17 @@ export async function GET(request: Request) {
     const wardId = searchParams.get("wardId");
     const severity = searchParams.get("severity");
     const status = searchParams.get("status");
+    const cityId = searchParams.get("cityId");
 
     const where: any = {};
+    if (cityId) where.cityId = cityId;
     if (wardId) where.wardId = wardId;
     if (severity) where.severity = severity;
     if (status) where.status = status;
 
     const incidents = await prisma.incidentReport.findMany({
       where,
-      include: { ward: true },
+      include: { ward: true, city: true },
       orderBy: { createdAt: "desc" }
     });
 
@@ -31,11 +33,14 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { latitude, longitude, description, imageUrl, reporterName, reporterPhone } = body;
+    const { latitude, longitude, description, imageUrl, reporterName, reporterPhone, cityId } = body;
 
     if (!latitude || !longitude || !description) {
       return NextResponse.json({ error: "Latitude, longitude, and description are required" }, { status: 400 });
     }
+
+    const latVal = parseFloat(latitude);
+    const lngVal = parseFloat(longitude);
 
     // 1. Process description through Zero-Shot Classification AI Pipeline
     const { label, confidence } = await classifyIncidentDescription(description);
@@ -48,13 +53,43 @@ export async function POST(request: Request) {
     else if (label === "MINOR_WATERLOGGING") severity = "LOW";
 
     // 3. Find Ward via GeoJSON Bounding boundaries
-    const wardId = await findWardForCoordinate(latitude, longitude);
+    const wardId = await findWardForCoordinate(latVal, lngVal);
 
-    // 4. Create database entry
+    // 4. Resolve City ID
+    let finalCityId = cityId;
+    if (!finalCityId) {
+      if (wardId) {
+        const ward = await prisma.ward.findUnique({
+          where: { id: wardId },
+          select: { cityId: true }
+        });
+        if (ward) finalCityId = ward.cityId;
+      }
+      if (!finalCityId) {
+        // Fallback: find nearest city center coordinates
+        const cities = await prisma.city.findMany();
+        if (cities.length > 0) {
+          let closestCity = cities[0];
+          let minDistance = Infinity;
+          for (const city of cities) {
+            const dist = Math.pow(city.latitude - latVal, 2) + Math.pow(city.longitude - lngVal, 2);
+            if (dist < minDistance) {
+              minDistance = dist;
+              closestCity = city;
+            }
+          }
+          finalCityId = closestCity.id;
+        } else {
+          return NextResponse.json({ error: "No cities found in database. Seed needed." }, { status: 500 });
+        }
+      }
+    }
+
+    // 5. Create database entry
     const newIncident = await prisma.incidentReport.create({
       data: {
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
+        latitude: latVal,
+        longitude: lngVal,
         description,
         imageUrl: imageUrl || "/demo-flood.jpg",
         aiLabel: label,
@@ -63,12 +98,13 @@ export async function POST(request: Request) {
         status: "REPORTED",
         reporterName: reporterName || "Anonymous Citizen",
         reporterPhone: reporterPhone || null,
+        cityId: finalCityId,
         wardId
       },
       include: { ward: true }
     });
 
-    // 5. Update Ward dynamic risk metrics
+    // 6. Update Ward dynamic risk metrics
     if (wardId) {
       await updateWardRiskScore(wardId);
     }

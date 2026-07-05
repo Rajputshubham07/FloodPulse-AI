@@ -10,6 +10,21 @@ datasource db {
   provider = "sqlite"
 }
 
+model City {
+  id             String           @id @default(uuid())
+  name           String           @unique // Mumbai, Bengaluru, Chennai
+  latitude       Float
+  longitude      Float
+  zoomLevel      Int              @default(12)
+  readinessScore Float            @default(80.0)
+  riskScore      Float            @default(45.0)
+  riskLevel      String           @default("MEDIUM")
+  description    String?
+  wards          Ward[]
+  incidents      IncidentReport[]
+  alerts         EmergencyAlert[]
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -30,10 +45,12 @@ model IncidentReport {
   aiConfidence  Float
   severity      String   // LOW, MEDIUM, HIGH, CRITICAL
   status        String   // REPORTED, INVESTIGATING, DISPATCHED, RESOLVED
+  cityId        String
   wardId        String?
   assignedTo    String?  // Name of agency or official
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  city          City     @relation(fields: [cityId], references: [id])
   ward          Ward?    @relation(fields: [wardId], references: [id])
 }
 
@@ -43,8 +60,10 @@ model Ward {
   boundaryJson  String           // GeoJSON representation of ward boundary
   riskScore     Float            // 0.0 to 100.0
   riskLevel     String           // LOW, MEDIUM, HIGH, CRITICAL
+  cityId        String
   reports       IncidentReport[]
   lastUpdated   DateTime         @default(now())
+  city          City             @relation(fields: [cityId], references: [id])
 }
 
 model EmergencyAlert {
@@ -52,7 +71,9 @@ model EmergencyAlert {
   title       String
   message     String
   severity    String   // INFO, WARNING, DANGER
+  cityId      String
   wardId      String?
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
+  city        City     @relation(fields: [cityId], references: [id])
 }

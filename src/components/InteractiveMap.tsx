@@ -31,16 +31,39 @@ const getRiskColor = (level: string) => {
   }
 };
 
-const MUMBAI_OUTER_LIMITS: [number, number][] = [
-  [18.895, 72.805],
-  [18.895, 72.845],
-  [18.940, 72.855],
-  [18.970, 72.850],
-  [18.970, 72.820],
-  [18.950, 72.805],
-  [18.910, 72.800],
-  [18.895, 72.805]
-];
+const CITY_OUTER_LIMITS: Record<string, [number, number][]> = {
+  "Mumbai": [
+    [18.895, 72.805],
+    [18.895, 72.845],
+    [18.940, 72.855],
+    [18.970, 72.850],
+    [18.970, 72.820],
+    [18.950, 72.805],
+    [18.910, 72.800],
+    [18.895, 72.805]
+  ],
+  "Bengaluru": [
+    [12.86, 77.54],
+    [12.86, 77.68],
+    [12.93, 77.74],
+    [13.04, 77.74],
+    [13.07, 77.66],
+    [13.07, 77.53],
+    [12.98, 77.49],
+    [12.90, 77.49],
+    [12.86, 77.54]
+  ],
+  "Chennai": [
+    [12.95, 80.18],
+    [12.95, 80.26],
+    [13.02, 80.28],
+    [13.08, 80.28],
+    [13.12, 80.25],
+    [13.12, 80.20],
+    [13.05, 80.18],
+    [12.95, 80.18]
+  ]
+};
 
 // Component to dynamically adjust map view when a selected incident changes
 function MapViewUpdater({ center, zoom }: { center: [number, number]; zoom: number }) {
@@ -71,6 +94,8 @@ interface InteractiveMapProps {
   onMapClick?: (lat: number, lng: number) => void;
   reportCoordinates?: [number, number] | null;
   safeRoutePath?: [number, number][];
+  cityCenter?: [number, number];
+  cityZoom?: number;
 }
 
 export default function InteractiveMap({
@@ -80,7 +105,9 @@ export default function InteractiveMap({
   onSelectIncident,
   onMapClick,
   reportCoordinates,
-  safeRoutePath
+  safeRoutePath,
+  cityCenter,
+  cityZoom
 }: InteractiveMapProps) {
   const [mapCenter, setMapCenter] = useState<[number, number]>([18.93, 72.83]);
   const [mapZoom, setMapZoom] = useState<number>(13);
@@ -92,6 +119,21 @@ export default function InteractiveMap({
       setMapZoom(16);
     }
   }, [selectedIncident]);
+
+  // Set center to active city center when it changes
+  useEffect(() => {
+    if (cityCenter) {
+      setMapCenter(cityCenter);
+      setMapZoom(cityZoom || 12);
+    } else if (wards.length > 0 && wards[0]?.city) {
+      const city = wards[0].city;
+      setMapCenter([city.latitude, city.longitude]);
+      setMapZoom(city.zoomLevel || 12);
+    }
+  }, [cityCenter, cityZoom, wards]);
+
+  const activeCityName = wards[0]?.city?.name || "Mumbai";
+  const cityLimits = CITY_OUTER_LIMITS[activeCityName] || CITY_OUTER_LIMITS["Mumbai"];
 
   return (
     <div className="w-full h-full relative rounded-xl overflow-hidden border border-slate-800 shadow-2xl">
@@ -109,17 +151,19 @@ export default function InteractiveMap({
           attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
         />
 
-        {/* Mumbai City Limits Outer Boundary */}
-        <Polygon
-          positions={MUMBAI_OUTER_LIMITS}
-          pathOptions={{
-            color: "#ffffff",
-            weight: 3,
-            dashArray: "10, 15",
-            fill: false,
-            interactive: false
-          }}
-        />
+        {/* Dynamic City Limits Outer Boundary */}
+        {cityLimits && (
+          <Polygon
+            positions={cityLimits}
+            pathOptions={{
+              color: "#ffffff",
+              weight: 3,
+              dashArray: "10, 15",
+              fill: false,
+              interactive: false
+            }}
+          />
+        )}
 
         {/* Dynamic click handler for pinning incident reports */}
         {onMapClick && <MapClickHandler onMapClick={onMapClick} />}

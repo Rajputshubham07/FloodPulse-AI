@@ -13,6 +13,7 @@ export default function MunicipalPage() {
   const [incidents, setIncidents] = useState<any[]>([]);
   const [selectedIncident, setSelectedIncident] = useState<any | null>(null);
   const [selectedWard, setSelectedWard] = useState<any | null>(null);
+  const [activeCityId, setActiveCityId] = useState<string>("");
 
   // Filters & Sorting state
   const [filterSeverity, setFilterSeverity] = useState("ALL");
@@ -28,8 +29,12 @@ export default function MunicipalPage() {
   const [severity, setSeverity] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const loadData = (rainfallVal?: number) => {
-    const url = rainfallVal !== undefined ? `/api/wards?rainfall=${rainfallVal}` : "/api/wards";
+  const loadData = (rainfallVal?: number, targetCityId?: string) => {
+    const cityIdToUse = targetCityId || activeCityId || localStorage.getItem("floodpulse_city") || "";
+    if (!cityIdToUse) return;
+
+    const baseWardsUrl = `/api/wards?cityId=${cityIdToUse}`;
+    const url = rainfallVal !== undefined ? `${baseWardsUrl}&rainfall=${rainfallVal}` : baseWardsUrl;
     fetch(url)
       .then((res) => res.json())
       .then((data) => {
@@ -43,7 +48,7 @@ export default function MunicipalPage() {
         }
       });
 
-    fetch("/api/incidents")
+    fetch(`/api/incidents?cityId=${cityIdToUse}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setIncidents(data);
@@ -51,10 +56,30 @@ export default function MunicipalPage() {
   };
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(() => loadData(undefined), 10000);
-    return () => clearInterval(interval);
+    const initialCityId = localStorage.getItem("floodpulse_city") || "";
+    setActiveCityId(initialCityId);
+    if (initialCityId) {
+      loadData(undefined, initialCityId);
+    }
+
+    const handleCityChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setActiveCityId(customEvent.detail);
+        setSelectedIncident(null);
+        setSelectedWard(null);
+      }
+    };
+    window.addEventListener("cityChanged", handleCityChange);
+    return () => window.removeEventListener("cityChanged", handleCityChange);
   }, []);
+
+  useEffect(() => {
+    if (!activeCityId) return;
+    loadData(undefined, activeCityId);
+    const interval = setInterval(() => loadData(undefined, activeCityId), 10000);
+    return () => clearInterval(interval);
+  }, [activeCityId]);
 
   useEffect(() => {
     if (selectedIncident) {

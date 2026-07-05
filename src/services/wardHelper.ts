@@ -101,6 +101,22 @@ export async function updateWardRiskScore(wardId: string, currentRainfall: numbe
     elevation = 5;
     proximityToWater = 400;
     historicalFrequency = 14;
+  } else if (ward.name.includes("Mahadevapura")) {
+    elevation = 870;
+    proximityToWater = 150; // proximity to Bellandur lake basin
+    historicalFrequency = 18;
+  } else if (ward.name.includes("Bommanahalli")) {
+    elevation = 882;
+    proximityToWater = 300;
+    historicalFrequency = 12;
+  } else if (ward.name.includes("Velachery")) {
+    elevation = 2;
+    proximityToWater = 50; // very low-lying basin
+    historicalFrequency = 25;
+  } else if (ward.name.includes("T-Nagar")) {
+    elevation = 6;
+    proximityToWater = 100;
+    historicalFrequency = 16;
   }
 
   // Count active incidents in this ward

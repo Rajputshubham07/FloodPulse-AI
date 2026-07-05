@@ -11,6 +11,8 @@ import {
 export default function CitizenPage() {
   const [wards, setWards] = useState<any[]>([]);
   const [incidents, setIncidents] = useState<any[]>([]);
+  const [activeCityId, setActiveCityId] = useState<string>("");
+  const [activeCity, setActiveCity] = useState<any | null>(null);
   
   // Reporting state
   const [showReportForm, setShowReportForm] = useState(false);
@@ -28,14 +30,17 @@ export default function CitizenPage() {
   const [routingActive, setRoutingActive] = useState(false);
   const [detoursAvoided, setDetoursAvoided] = useState<number>(0);
 
-  const loadData = () => {
-    fetch("/api/wards")
+  const loadData = (targetCityId?: string) => {
+    const cityIdToUse = targetCityId || activeCityId || localStorage.getItem("floodpulse_city") || "";
+    if (!cityIdToUse) return;
+
+    fetch(`/api/wards?cityId=${cityIdToUse}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setWards(data);
       });
 
-    fetch("/api/incidents")
+    fetch(`/api/incidents?cityId=${cityIdToUse}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) setIncidents(data);
@@ -43,10 +48,45 @@ export default function CitizenPage() {
   };
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 10000);
-    return () => clearInterval(interval);
+    const initialCityId = localStorage.getItem("floodpulse_city") || "";
+    setActiveCityId(initialCityId);
+    if (initialCityId) {
+      loadData(initialCityId);
+    }
+
+    const handleCityChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setActiveCityId(customEvent.detail);
+        setSafeRoute(undefined);
+        setRouteInfo(null);
+        setRoutingActive(false);
+        setReportCoords(null);
+        setReportResult(null);
+      }
+    };
+    window.addEventListener("cityChanged", handleCityChange);
+    return () => window.removeEventListener("cityChanged", handleCityChange);
   }, []);
+
+  useEffect(() => {
+    if (!activeCityId) return;
+
+    // Fetch active city stats
+    fetch("/api/cities")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const matched = data.find(c => c.id === activeCityId);
+          if (matched) setActiveCity(matched);
+        }
+      })
+      .catch((err) => console.error("Error loading active city details:", err));
+
+    loadData(activeCityId);
+    const interval = setInterval(() => loadData(activeCityId), 10000);
+    return () => clearInterval(interval);
+  }, [activeCityId]);
 
   const handleMapClick = (lat: number, lng: number) => {
     if (showReportForm) {
@@ -70,7 +110,11 @@ export default function CitizenPage() {
       (error) => {
         console.error("Geolocation error:", error);
         // Fallback to center of mock city for hackathon simplicity if GPS is denied
-        setReportCoords([18.93, 72.83]);
+        if (activeCity) {
+          setReportCoords([activeCity.latitude, activeCity.longitude]);
+        } else {
+          setReportCoords([18.93, 72.83]);
+        }
         setLocating(false);
       },
       { enableHighAccuracy: true, timeout: 6000 }
@@ -98,7 +142,8 @@ export default function CitizenPage() {
           reporterPhone,
           description,
           latitude: reportCoords[0],
-          longitude: reportCoords[1]
+          longitude: reportCoords[1],
+          cityId: activeCityId
         })
       });
 
@@ -122,14 +167,25 @@ export default function CitizenPage() {
   };
 
   const handleSimulateRoute = async () => {
-    // Mumbai coordinates: Churchgate Station (Ward A) to Crawford Market (Ward B)
-    const startLat = 18.932;
-    const startLng = 72.827;
-    const endLat = 18.948;
-    const endLng = 72.834;
+    let startLat = 18.932;
+    let startLng = 72.827;
+    let endLat = 18.948;
+    let endLng = 72.834;
+
+    if (activeCity && activeCity.name === "Bengaluru") {
+      startLat = 12.972;
+      startLng = 77.640;
+      endLat = 12.928;
+      endLng = 77.680;
+    } else if (activeCity && activeCity.name === "Chennai") {
+      startLat = 13.039;
+      startLng = 80.231;
+      endLat = 12.978;
+      endLng = 80.225;
+    }
 
     try {
-      const res = await fetch(`/api/safe-route?startLat=${startLat}&startLng=${startLng}&endLat=${endLat}&endLng=${endLng}`);
+      const res = await fetch(`/api/safe-route?cityId=${activeCityId}&startLat=${startLat}&startLng=${startLng}&endLat=${endLat}&endLng=${endLng}`);
       const data = await res.json();
       if (res.ok) {
         setSafeRoute(data.path);
@@ -163,6 +219,8 @@ export default function CitizenPage() {
             onMapClick={handleMapClick}
             reportCoordinates={reportCoords}
             safeRoutePath={safeRoute}
+            cityCenter={activeCity ? [activeCity.latitude, activeCity.longitude] : undefined}
+            cityZoom={activeCity ? activeCity.zoomLevel : undefined}
           />
 
           {!showReportForm && (

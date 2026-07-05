@@ -22,6 +22,8 @@ interface MapLoaderProps {
   onMapClick?: (lat: number, lng: number) => void;
   reportCoordinates?: [number, number] | null;
   safeRoutePath?: [number, number][];
+  cityCenter?: [number, number];
+  cityZoom?: number;
 }
 
 export default function MapLoader(props: MapLoaderProps) {

@@ -9,8 +9,16 @@ function getWardPhysicalAttributes(name: string) {
     return { elevation: 4, proximityToWater: 200, historicalFrequency: 18 };
   } else if (name.includes("Ward B")) {
     return { elevation: 3, proximityToWater: 50, historicalFrequency: 22 };
+  } else if (name.includes("Mahadevapura")) {
+    return { elevation: 870, proximityToWater: 150, historicalFrequency: 18 };
+  } else if (name.includes("Bommanahalli")) {
+    return { elevation: 882, proximityToWater: 300, historicalFrequency: 12 };
+  } else if (name.includes("Velachery")) {
+    return { elevation: 2, proximityToWater: 50, historicalFrequency: 25 };
+  } else if (name.includes("T-Nagar")) {
+    return { elevation: 6, proximityToWater: 100, historicalFrequency: 16 };
   } else {
-    return { elevation: 5, proximityToWater: 400, historicalFrequency: 14 };
+    return { elevation: 10, proximityToWater: 500, historicalFrequency: 8 };
   }
 }
 
@@ -19,9 +27,15 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const rainfallParam = searchParams.get("rainfall");
     const currentRainfall = rainfallParam ? parseFloat(rainfallParam) : 25;
+    const cityId = searchParams.get("cityId");
+
+    const where: any = {};
+    if (cityId) where.cityId = cityId;
 
     let wards = await prisma.ward.findMany({
+      where,
       include: {
+        city: true,
         reports: {
           where: {
             status: { not: "RESOLVED" }
@@ -37,7 +51,9 @@ export async function GET(request: Request) {
       }
       // Re-fetch updated records
       wards = await prisma.ward.findMany({
+        where,
         include: {
+          city: true,
           reports: {
             where: {
               status: { not: "RESOLVED" }
