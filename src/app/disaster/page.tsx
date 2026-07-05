@@ -360,7 +360,7 @@ export default function DisasterPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-900 py-6 text-center text-[10px] text-slate-600 bg-slate-950/10">
-        BBMP & NDRF Karnataka Command Panel. Authorized BBMP officials only.
+        MCGM & NDRF Maharashtra Command Panel. Authorized MCGM officials only.
       </footer>
     </div>
   );

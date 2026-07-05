@@ -6,29 +6,11 @@ const dbPath = path.resolve(process.cwd(), "prisma", "dev.db");
 const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
 const prisma = new PrismaClient({ adapter });
 
+// Mumbai Coordinates: Lat ~18.93, Lng ~72.83 (South Mumbai - Ward A, B, C limits)
 const mockWards = [
   {
-    name: "Zone: Mahadevapura (IT Corridor)",
-    riskScore: 84.5,
-    riskLevel: "CRITICAL",
-    boundaryJson: JSON.stringify({
-      type: "Feature",
-      properties: {},
-      geometry: {
-        type: "Polygon",
-        coordinates: [[
-          [77.660, 12.960],
-          [77.720, 12.960],
-          [77.720, 13.030],
-          [77.660, 13.030],
-          [77.660, 12.960]
-        ]]
-      }
-    })
-  },
-  {
-    name: "Zone: Bommanahalli (South-East)",
-    riskScore: 72.0,
+    name: "Ward A: Colaba / Fort / Churchgate",
+    riskScore: 68.5,
     riskLevel: "HIGH",
     boundaryJson: JSON.stringify({
       type: "Feature",
@@ -36,18 +18,37 @@ const mockWards = [
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [77.600, 12.870],
-          [77.655, 12.870],
-          [77.655, 12.940],
-          [77.600, 12.940],
-          [77.600, 12.870]
+          [72.805, 18.895],
+          [72.845, 18.895],
+          [72.845, 18.940],
+          [72.805, 18.940],
+          [72.805, 18.895]
         ]]
       }
     })
   },
   {
-    name: "Zone: Indiranagar (East Zone)",
-    riskScore: 32.4,
+    name: "Ward B: Sandhurst Road / Crawford Market",
+    riskScore: 84.0,
+    riskLevel: "CRITICAL",
+    boundaryJson: JSON.stringify({
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [72.820, 18.940],
+          [72.848, 18.940],
+          [72.848, 18.968],
+          [72.820, 18.968],
+          [72.820, 18.940]
+        ]]
+      }
+    })
+  },
+  {
+    name: "Ward C: Marine Lines / Metro Cinema",
+    riskScore: 35.4,
     riskLevel: "MEDIUM",
     boundaryJson: JSON.stringify({
       type: "Feature",
@@ -55,30 +56,11 @@ const mockWards = [
       geometry: {
         type: "Polygon",
         coordinates: [[
-          [77.610, 12.945],
-          [77.650, 12.945],
-          [77.650, 12.985],
-          [77.610, 12.985],
-          [77.610, 12.945]
-        ]]
-      }
-    })
-  },
-  {
-    name: "Zone: Jayanagar (South Zone)",
-    riskScore: 12.8,
-    riskLevel: "LOW",
-    boundaryJson: JSON.stringify({
-      type: "Feature",
-      properties: {},
-      geometry: {
-        type: "Polygon",
-        coordinates: [[
-          [77.560, 12.910],
-          [77.605, 12.910],
-          [77.605, 12.955],
-          [77.560, 12.955],
-          [77.560, 12.910]
+          [72.810, 18.940],
+          [72.830, 18.940],
+          [72.830, 18.958],
+          [72.810, 18.958],
+          [72.810, 18.940]
         ]]
       }
     })
@@ -87,65 +69,77 @@ const mockWards = [
 
 const mockIncidents = [
   {
-    reporterName: "Rajesh Kumar",
-    reporterPhone: "+919876543210",
-    latitude: 12.928,
-    longitude: 77.680,
-    description: "Bellandur Outer Ring Road near EcoSpace completely waterlogged. Water is 3 feet deep. Traffic stalled.",
-    aiLabel: "FLOODED_ROAD",
-    aiConfidence: 0.96,
-    severity: "CRITICAL",
-    status: "DISPATCHED",
-    assignedTo: "BBMP Stormwater Dept"
-  },
-  {
-    reporterName: "Anita Sen",
-    reporterPhone: "+919900112233",
-    latitude: 12.917,
-    longitude: 77.623,
-    description: "Silk Board junction underpass flooded. Multiple cars stranded. Local drainage choked.",
+    reporterName: "Amit Shah",
+    reporterPhone: "+919811223344",
+    latitude: 18.948,
+    longitude: 72.834,
+    description: "Crawford Market junction flooded. Water accumulation near old gates. Storm drainage completely choked with waste.",
     aiLabel: "BLOCKED_DRAIN",
-    aiConfidence: 0.94,
+    aiConfidence: 0.95,
     severity: "HIGH",
     status: "INVESTIGATING",
-    assignedTo: "Muni Drainage Division B"
+    assignedTo: "MCGM Stormwater Drainage Dept"
   },
   {
-    reporterName: "Vikram Malhotra",
-    reporterPhone: "+919555667788",
-    latitude: 12.968,
-    longitude: 77.642,
-    description: "Indiranagar 100 Feet Road. Minor water accumulation on side walk. Traffic moving slowly.",
+    reporterName: "Sunita Deshmukh",
+    reporterPhone: "+919822334455",
+    latitude: 18.932,
+    longitude: 72.827,
+    description: "Churchgate station subway entrance flooded. Heavy water accumulation makes walking impossible.",
+    aiLabel: "FLOODED_ROAD",
+    aiConfidence: 0.97,
+    severity: "CRITICAL",
+    status: "DISPATCHED",
+    assignedTo: "Mumbai Disaster Response Squad A"
+  },
+  {
+    reporterName: "Karan Johar",
+    reporterPhone: "+919833445566",
+    latitude: 18.937,
+    longitude: 72.838,
+    description: "Ballard Estate business district. Water logging on service roads up to vehicle tyres level.",
     aiLabel: "MINOR_WATERLOGGING",
-    aiConfidence: 0.88,
+    aiConfidence: 0.86,
     severity: "LOW",
     status: "REPORTED",
     assignedTo: null
   },
   {
-    reporterName: "Sensor ORR-12",
-    reporterPhone: "Automated Telemetry",
-    latitude: 12.998,
-    longitude: 77.695,
-    description: "Karthik Nagar Rajakaluve channel overflowing. Severe spillover onto service lane.",
+    reporterName: "Telemetry Node D2",
+    reporterPhone: "Automated Sensor",
+    latitude: 18.943,
+    longitude: 72.825,
+    description: "Metro Cinema junction flooded. High water level on road stalls traffic.",
     aiLabel: "MAJOR_WATERLOGGING",
     aiConfidence: 0.99,
     severity: "CRITICAL",
     status: "REPORTED",
-    assignedTo: "BBMP Disaster Ops"
+    assignedTo: "MCGM Emergency Operations"
+  },
+  {
+    reporterName: "Rohit Patil",
+    reporterPhone: "+919844556677",
+    latitude: 18.928,
+    longitude: 72.824,
+    description: "Mantralaya main lane road waterlogged. Storm drainage capacity full.",
+    aiLabel: "MAJOR_WATERLOGGING",
+    aiConfidence: 0.91,
+    severity: "HIGH",
+    status: "REPORTED",
+    assignedTo: "South Mumbai Engineering"
   }
 ];
 
 const mockAlerts = [
   {
-    title: "Rajakaluve Overflow Alert",
-    message: "Mahadevapura IT Corridor experiencing heavy channel overflows near Bellandur lake basin. Avoid low service roads.",
+    title: "High Tide Overflow Alert",
+    message: "Crawford Market (Ward B) and Marine Lines (Ward C) low-lying corridors experiencing overflow hazard due to heavy rainfall overlapping with High Tide.",
     severity: "DANGER",
     isActive: true
   },
   {
-    title: "Waterlogging Advisory",
-    message: "Heavy waterlogging reported near Silk Board (Bommanahalli Zone) and surrounding service roads.",
+    title: "Churchgate Subway Warning",
+    message: "Avoid subway walks near Churchgate Station due to active flooding.",
     severity: "WARNING",
     isActive: true
   }
@@ -158,7 +152,7 @@ async function main() {
   await prisma.ward.deleteMany();
   await prisma.user.deleteMany();
 
-  console.log("Seeding Wards (Bengaluru Zones)...");
+  console.log("Seeding Wards (South Mumbai Zones)...");
   const wards = [];
   for (const wardData of mockWards) {
     const w = await prisma.ward.create({ data: wardData });
@@ -169,35 +163,34 @@ async function main() {
   await prisma.user.create({
     data: {
       email: "citizen@floodpulse.ai",
-      name: "Bengaluru Citizen",
+      name: "Mumbai Citizen",
       role: "CITIZEN"
     }
   });
   await prisma.user.create({
     data: {
       email: "official@floodpulse.ai",
-      name: "BBMP Commissioner",
+      name: "MCGM Commissioner",
       role: "MUNICIPAL_OFFICIAL"
     }
   });
   await prisma.user.create({
     data: {
       email: "commander@floodpulse.ai",
-      name: "NDRF Commander Karnataka",
+      name: "NDRF Commander Mumbai",
       role: "DISASTER_TEAM"
     }
   });
 
   console.log("Seeding Incidents...");
   for (const incidentData of mockIncidents) {
-    // Map coordinate to appropriate zone
     let assignedWardId: string | null = null;
-    if (incidentData.latitude > 12.95 && incidentData.longitude > 77.65) {
-      assignedWardId = wards.find(w => w.name.includes("Mahadevapura"))?.id || null;
-    } else if (incidentData.latitude <= 12.94 && incidentData.longitude > 77.60) {
-      assignedWardId = wards.find(w => w.name.includes("Bommanahalli"))?.id || null;
-    } else if (incidentData.latitude > 12.94 && incidentData.longitude <= 77.65) {
-      assignedWardId = wards.find(w => w.name.includes("Indiranagar"))?.id || null;
+    if (incidentData.latitude < 18.940) {
+      assignedWardId = wards.find(w => w.name.includes("Ward A"))?.id || null;
+    } else if (incidentData.longitude > 72.830) {
+      assignedWardId = wards.find(w => w.name.includes("Ward B"))?.id || null;
+    } else {
+      assignedWardId = wards.find(w => w.name.includes("Ward C"))?.id || null;
     }
 
     await prisma.incidentReport.create({
@@ -212,10 +205,10 @@ async function main() {
   console.log("Seeding Alerts...");
   for (const alertData of mockAlerts) {
     let assignedWardId: string | null = null;
-    if (alertData.title.includes("Rajakaluve")) {
-      assignedWardId = wards.find(w => w.name.includes("Mahadevapura"))?.id || null;
-    } else if (alertData.title.includes("Waterlogging")) {
-      assignedWardId = wards.find(w => w.name.includes("Bommanahalli"))?.id || null;
+    if (alertData.title.includes("High Tide")) {
+      assignedWardId = wards.find(w => w.name.includes("Ward B"))?.id || null;
+    } else if (alertData.title.includes("Subway")) {
+      assignedWardId = wards.find(w => w.name.includes("Ward A"))?.id || null;
     }
     await prisma.emergencyAlert.create({
       data: {

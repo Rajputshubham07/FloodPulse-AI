@@ -285,7 +285,7 @@ export default function MunicipalPage() {
 
           </div>
           <div className="pt-2 border-t border-slate-900 text-[10px] text-slate-600 font-bold uppercase tracking-widest text-center">
-            BBMP Bengaluru Command Center
+            MCGM South Mumbai Command Center
           </div>
         </div>
 

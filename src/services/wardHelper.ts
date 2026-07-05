@@ -89,22 +89,18 @@ export async function updateWardRiskScore(wardId: string, currentRainfall: numbe
   let proximityToWater = 500; // default meters
   let historicalFrequency = 5; // default incidents
 
-  if (ward.name.includes("Mahadevapura")) {
-    elevation = 870;
-    proximityToWater = 150; // proximity to Bellandur lake basin
+  if (ward.name.includes("Ward A")) {
+    elevation = 4;
+    proximityToWater = 200; // proximity to Arabian Sea waterfront
     historicalFrequency = 18;
-  } else if (ward.name.includes("Bommanahalli")) {
-    elevation = 882;
-    proximityToWater = 300;
-    historicalFrequency = 12;
-  } else if (ward.name.includes("Indiranagar")) {
-    elevation = 910;
-    proximityToWater = 800;
-    historicalFrequency = 4;
-  } else if (ward.name.includes("Jayanagar")) {
-    elevation = 920;
-    proximityToWater = 1200;
-    historicalFrequency = 2;
+  } else if (ward.name.includes("Ward B")) {
+    elevation = 3;
+    proximityToWater = 50; // low-lying drainage exit proximity
+    historicalFrequency = 22;
+  } else if (ward.name.includes("Ward C")) {
+    elevation = 5;
+    proximityToWater = 400;
+    historicalFrequency = 14;
   }
 
   // Count active incidents in this ward

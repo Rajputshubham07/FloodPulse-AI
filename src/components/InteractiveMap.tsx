@@ -31,16 +31,15 @@ const getRiskColor = (level: string) => {
   }
 };
 
-const BENGALURU_OUTER_LIMITS: [number, number][] = [
-  [12.86, 77.54],
-  [12.86, 77.68],
-  [12.93, 77.74],
-  [13.04, 77.74],
-  [13.07, 77.66],
-  [13.07, 77.53],
-  [12.98, 77.49],
-  [12.90, 77.49],
-  [12.86, 77.54]
+const MUMBAI_OUTER_LIMITS: [number, number][] = [
+  [18.895, 72.805],
+  [18.895, 72.845],
+  [18.940, 72.855],
+  [18.970, 72.850],
+  [18.970, 72.820],
+  [18.950, 72.805],
+  [18.910, 72.800],
+  [18.895, 72.805]
 ];
 
 // Component to dynamically adjust map view when a selected incident changes
@@ -83,8 +82,8 @@ export default function InteractiveMap({
   reportCoordinates,
   safeRoutePath
 }: InteractiveMapProps) {
-  const [mapCenter, setMapCenter] = useState<[number, number]>([12.9716, 77.5946]);
-  const [mapZoom, setMapZoom] = useState<number>(11);
+  const [mapCenter, setMapCenter] = useState<[number, number]>([18.93, 72.83]);
+  const [mapZoom, setMapZoom] = useState<number>(13);
 
   // Set center to selected incident if specified
   useEffect(() => {
@@ -110,9 +109,9 @@ export default function InteractiveMap({
           attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
         />
 
-        {/* Bengaluru City Limits Outer Boundary */}
+        {/* Mumbai City Limits Outer Boundary */}
         <Polygon
-          positions={BENGALURU_OUTER_LIMITS}
+          positions={MUMBAI_OUTER_LIMITS}
           pathOptions={{
             color: "#ffffff",
             weight: 3,
