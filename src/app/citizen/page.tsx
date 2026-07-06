@@ -5,8 +5,9 @@ import Navigation from "../../components/Navigation";
 import MapLoader from "../../components/MapLoader";
 import { 
   Navigation as RouteIcon, ShieldCheck, MapPin, AlertCircle, Sparkles, 
-  Send, Plus, CheckCircle, Map, Crosshair, Compass, ShieldAlert
+  Send, Plus, CheckCircle, Map, Crosshair, Compass, ShieldAlert, Bot
 } from "lucide-react";
+import CitizenCopilot from "../../components/CitizenCopilot";
 
 export default function CitizenPage() {
   const [wards, setWards] = useState<any[]>([]);
@@ -29,6 +30,7 @@ export default function CitizenPage() {
   const [routeInfo, setRouteInfo] = useState<string | null>(null);
   const [routingActive, setRoutingActive] = useState(false);
   const [detoursAvoided, setDetoursAvoided] = useState<number>(0);
+  const [copilotOpen, setCopilotOpen] = useState(false);
 
   const loadData = (targetCityId?: string) => {
     const cityIdToUse = targetCityId || activeCityId || localStorage.getItem("floodpulse_city") || "";
@@ -205,6 +207,24 @@ export default function CitizenPage() {
     setRoutingActive(false);
   };
 
+  // Find highest flood probability in next 6h for active city
+  const maxPrediction = wards.reduce((max, ward) => {
+    const pred = ward.predictions?.find((p: any) => p.predictionWindow === "6h");
+    if (pred && pred.probability > max.probability) {
+      return { probability: pred.probability, wardName: ward.name, severity: pred.severity };
+    }
+    return max;
+  }, { probability: 0, wardName: "", severity: "LOW" });
+
+  const getRiskColor = (level: string) => {
+    switch (level) {
+      case "CRITICAL": return "#ef4444";
+      case "HIGH": return "#f97316";
+      case "MEDIUM": return "#eab308";
+      default: return "#22c55e";
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col bg-slate-950 text-slate-100 min-h-screen">
       <Navigation />
@@ -251,6 +271,23 @@ export default function CitizenPage() {
                 Monitor local storm drains, file flood reports, and route safely around waterlogged streets.
               </p>
             </div>
+
+            {/* AI Predictive Warning Card */}
+            {maxPrediction.probability > 0 && (
+              <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 space-y-2 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 animate-pulse" />
+                <span className="text-[10px] text-blue-400 font-extrabold uppercase tracking-widest flex items-center gap-1">
+                  <ShieldAlert className="h-3.5 w-3.5 animate-pulse text-blue-400" />
+                  AI Predictive Warning
+                </span>
+                <p className="text-xs text-slate-200 leading-normal">
+                  Flood probability in <span className="font-semibold">{maxPrediction.wardName.split(":")[0]}</span> in the next **6 hours** is <span className="font-extrabold" style={{ color: getRiskColor(maxPrediction.severity) }}>{maxPrediction.probability}%</span>.
+                </p>
+                <div className="text-[10px] text-slate-400 leading-normal bg-slate-950/60 p-2 rounded border border-slate-900/80">
+                  <span className="font-bold text-slate-300">Suggested Action:</span> {maxPrediction.probability > 70 ? "Avoid local transit. Elevate vulnerable assets." : "Monitor local drainage channels."}
+                </div>
+              </div>
+            )}
 
             {/* Safe Detour Router */}
             <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-900 space-y-3">
@@ -445,6 +482,20 @@ export default function CitizenPage() {
         </div>
 
       </div>
+
+      {/* Floating AI Safety Copilot Toggle Button */}
+      <button
+        onClick={() => setCopilotOpen(true)}
+        className="fixed bottom-6 right-6 z-[2500] bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold p-3.5 rounded-full shadow-xl shadow-emerald-950/40 flex items-center justify-center cursor-pointer border border-emerald-400/30 transition-transform active:scale-95 animate-bounce hover:animate-none"
+      >
+        <Bot className="h-6 w-6" />
+      </button>
+
+      <CitizenCopilot
+        cityId={activeCityId}
+        isOpen={copilotOpen}
+        onClose={() => setCopilotOpen(false)}
+      />
     </div>
   );
 }

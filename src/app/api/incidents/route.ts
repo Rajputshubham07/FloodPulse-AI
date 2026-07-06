@@ -56,7 +56,15 @@ export async function POST(request: Request) {
     const wardId = await findWardForCoordinate(latVal, lngVal);
 
     // 4. Resolve City ID
-    let finalCityId = cityId;
+    let resolvedCityId = cityId;
+    if (resolvedCityId) {
+      const cityExists = await prisma.city.findUnique({ where: { id: resolvedCityId } });
+      if (!cityExists) {
+        resolvedCityId = null;
+      }
+    }
+
+    let finalCityId = resolvedCityId;
     if (!finalCityId) {
       if (wardId) {
         const ward = await prisma.ward.findUnique({

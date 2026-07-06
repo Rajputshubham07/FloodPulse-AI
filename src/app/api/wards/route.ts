@@ -40,7 +40,8 @@ export async function GET(request: Request) {
           where: {
             status: { not: "RESOLVED" }
           }
-        }
+        },
+        predictions: true
       }
     });
 
@@ -58,7 +59,8 @@ export async function GET(request: Request) {
             where: {
               status: { not: "RESOLVED" }
             }
-          }
+          },
+          predictions: true
         }
       });
     }

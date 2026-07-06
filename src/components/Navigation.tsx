@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Waves, ShieldAlert, Landmark, User, Zap } from "lucide-react";
+import { Waves, ShieldAlert, Landmark, User, Zap, Cpu, Globe } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function Navigation() {
@@ -20,10 +20,11 @@ export default function Navigation() {
           setCities(data);
           // Set initial default city from localStorage or fallback to first city
           const stored = localStorage.getItem("floodpulse_city");
-          const defaultCityId = stored || (data[0] ? data[0].id : "");
+          const exists = data.some(c => c.id === stored);
+          const defaultCityId = (stored && exists) ? stored : (data[0] ? data[0].id : "");
           if (defaultCityId) {
             setSelectedCityId(defaultCityId);
-            if (!stored) localStorage.setItem("floodpulse_city", defaultCityId);
+            localStorage.setItem("floodpulse_city", defaultCityId);
           }
         }
       })
@@ -65,6 +66,8 @@ export default function Navigation() {
     { href: "/citizen", label: "Citizen App", icon: User },
     { href: "/municipal", label: "Muni Panel", icon: Landmark },
     { href: "/disaster", label: "Disaster Ops", icon: ShieldAlert },
+    { href: "/digital-twin", label: "Digital Twin", icon: Cpu },
+    { href: "/satellite", label: "Satellite Ops", icon: Globe }
   ];
 
   return (

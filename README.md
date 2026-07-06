@@ -9,7 +9,7 @@ This project is built as a production-quality hackathon MVP using **Next.js (App
 
 ## 🏗️ Technical Architecture & Stack
 
-- **Frontend**: Next.js App Router (TypeScript), Tailwind CSS, Leaflet.js (React-Leaflet) with Esri World Imagery Satellite Map styling, Lucide Icons, and Recharts.
+- **Frontend & GIS**: Next.js App Router (TypeScript), Tailwind CSS, Leaflet.js (`react-leaflet`) with Esri World Imagery Satellite Map & World Places Hybrid Label base layers, Nominatim geocoding API integration, browser Geolocation tracking, lightweight zoom-based client-side marker clustering, Lucide Icons, and Recharts.
 - **Backend & APIs**: Next.js Serverless Route Handlers (`app/api/*`) exposing clean REST endpoints.
 - **Database Layer**: SQLite powered by Prisma 7. The setup leverages a custom driver adapter (`better-sqlite3`) to connect serverless functions.
 - **AI & Analytics**: 
@@ -66,22 +66,17 @@ The project has been initialized and organized with modular clean-code practices
 
 ---
 
-## 📍 MCGM South Mumbai Ward Scope (Demo Context)
+## 📍 Multi-City Geographical Scope
 
-The map and database seed are pre-configured to focus on **South Mumbai limits (MCGM Wards A, B, and C)**:
+The map, database, and boundary limits are fully configured to support **five major urban centers in India**:
 
-1. **Wards Configured**:
-   - **Ward A**: Colaba / Fort / Churchgate (High risk, sea levels and subway networks)
-   - **Ward B**: Sandhurst Road / Crawford Market (Critical risk, low-lying basin)
-   - **Ward C**: Marine Lines / Metro Cinema (Medium risk, urban spillover drains)
-2. **Pre-Seeded Waterlogging Hotspots**:
-   - **Crawford Market**: Storm drainage choked (Ward B)
-   - **Churchgate Station Subway**: Foot traffic blockage (Ward A)
-   - **Ballard Estate**: Service road flooding (Ward A)
-   - **Metro Cinema Junction**: Road traffic stalled (Ward C)
-   - **Mantralaya Administrative Gate**: Surface water pooling (Ward A)
-3. **Simulated Commute Corridor**:
-   - Commute detours are mapped between **Churchgate Station (Ward A)** and **Crawford Market (Ward B)**, dynamically bypassing active flood points.
+1. **Mumbai** (South Mumbai limits covering Wards A, B, and C)
+2. **Bengaluru** (Mahadevapura and Bommanahalli wards)
+3. **Chennai** (Velachery and T-Nagar wards)
+4. **Hyderabad** (Begumpet and Khairatabad wards)
+5. **Guwahati** (Zoo Road and Anil Nagar wards)
+
+Each city features a realistic, non-rectangular geographic boundary polygon mapped in the GIS layer, and comes pre-seeded with localized flood risk parameters, wards, alerts, and active incident hotspots.
 
 ---
 

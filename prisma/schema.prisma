@@ -23,6 +23,10 @@ model City {
   wards          Ward[]
   incidents      IncidentReport[]
   alerts         EmergencyAlert[]
+  scenarios      DigitalTwinScenario[]
+  satelliteImages SatelliteImage[]
+  copilotConversations CopilotConversation[]
+  copilotInsights      CopilotInsight[]
 }
 
 model User {
@@ -62,6 +66,7 @@ model Ward {
   riskLevel     String           // LOW, MEDIUM, HIGH, CRITICAL
   cityId        String
   reports       IncidentReport[]
+  predictions   FloodPrediction[]
   lastUpdated   DateTime         @default(now())
   city          City             @relation(fields: [cityId], references: [id])
 }
@@ -76,4 +81,88 @@ model EmergencyAlert {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   city        City     @relation(fields: [cityId], references: [id])
+}
+
+model FloodPrediction {
+  id               String   @id @default(uuid())
+  wardId           String
+  predictionWindow String   // "3h", "6h", "12h", "24h"
+  probability      Float    // 0.0 to 100.0
+  severity         String   // LOW, MEDIUM, HIGH, CRITICAL
+  confidence       Float    // 0.0 to 100.0
+  reasoning        String
+  createdAt        DateTime @default(now())
+  ward             Ward     @relation(fields: [wardId], references: [id], onDelete: Cascade)
+
+  @@unique([wardId, predictionWindow])
+}
+
+model DigitalTwinScenario {
+  id                 String         @id @default(uuid())
+  cityId             String
+  scenarioName       String
+  rainfallAmount     Float          // simulated or forecast rainfall in mm/hr
+  simulationHours    Float          // 0 (current), 3, 6, 12, 24
+  affectedPopulation Int
+  affectedRoadLength Float          // in km
+  floodAreaKm2       Float          // flooded surface area
+  generatedAt        DateTime       @default(now())
+  polygons           FloodPolygon[]
+  city               City           @relation(fields: [cityId], references: [id], onDelete: Cascade)
+}
+
+model FloodPolygon {
+  id          String              @id @default(uuid())
+  scenarioId  String
+  geometry    String              // GeoJSON Polygon string representing flood boundary
+  severity    String              // LOW, MEDIUM, HIGH, CRITICAL
+  waterDepth  Float               // in meters
+  generatedAt DateTime            @default(now())
+  scenario    DigitalTwinScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+}
+
+model SatelliteImage {
+  id              String           @id @default(uuid())
+  source          String           // "Sentinel-1 SAR" | "Sentinel-2 NDWI"
+  acquisitionDate DateTime
+  cityId          String
+  imageUrl        String
+  metadata        String           // stringified JSON of satellite metadata
+  createdAt       DateTime         @default(now())
+  detections      FloodDetection[]
+  city            City             @relation(fields: [cityId], references: [id], onDelete: Cascade)
+}
+
+model FloodDetection {
+  id          String         @id @default(uuid())
+  imageId     String
+  geometry    String         // GeoJSON Polygon string representing detected flood area
+  areaKm2     Float
+  severity    String         // LOW, MEDIUM, HIGH, CRITICAL
+  confidence  Float          // percentage
+  createdAt   DateTime       @default(now())
+  image       SatelliteImage @relation(fields: [imageId], references: [id], onDelete: Cascade)
+}
+
+model CopilotConversation {
+  id          String   @id @default(uuid())
+  cityId      String
+  userQuery   String
+  aiResponse  String
+  evidence    String   // stringified JSON of fact sources
+  confidence  Float    // percentage confidence (0 to 100)
+  actions     String   // stringified JSON of recommended actions
+  createdAt   DateTime @default(now())
+  city        City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+}
+
+model CopilotInsight {
+  id              String   @id @default(uuid())
+  cityId          String
+  summary         String
+  recommendations String   // stringified JSON of actions
+  alerts          String   // stringified JSON of alerts
+  wardRankings    String   // stringified JSON of rankings
+  createdAt       DateTime @default(now())
+  city            City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
 }

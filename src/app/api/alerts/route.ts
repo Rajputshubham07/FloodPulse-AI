@@ -32,6 +32,12 @@ export async function POST(request: Request) {
     }
 
     let finalCityId = cityId;
+    if (finalCityId) {
+      const cityExists = await prisma.city.findUnique({ where: { id: finalCityId } });
+      if (!cityExists) {
+        finalCityId = null;
+      }
+    }
     if (!finalCityId && wardId) {
       const ward = await prisma.ward.findUnique({
         where: { id: wardId },

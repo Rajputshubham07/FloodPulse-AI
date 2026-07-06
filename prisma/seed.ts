@@ -1,6 +1,9 @@
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import path from "path";
+import { generateForecastsForCity } from "../src/services/floodPredictionEngine";
+import { runDigitalTwinSimulation } from "../src/services/digitalTwinEngine";
+import { runSatelliteFloodAnalysis } from "../src/services/satelliteFloodService";
 
 const dbPath = path.resolve(process.cwd(), "prisma", "dev.db");
 const adapter = new PrismaBetterSqlite3({ url: `file:${dbPath}` });
@@ -36,6 +39,26 @@ const mockCities = [
     riskScore: 84.5,
     riskLevel: "CRITICAL",
     description: "Low-lying coastal city highly vulnerable to cyclone precipitation and velachery underpass waterlogging."
+  },
+  {
+    name: "Hyderabad",
+    latitude: 17.3850,
+    longitude: 78.4867,
+    zoomLevel: 12,
+    readinessScore: 79.5,
+    riskScore: 62.0,
+    riskLevel: "MEDIUM",
+    description: "Inland historic city prone to urban waterlogging and drainage overflows in low-lying areas during sudden cloudbursts."
+  },
+  {
+    name: "Guwahati",
+    latitude: 26.1445,
+    longitude: 91.7362,
+    zoomLevel: 12,
+    readinessScore: 65.0,
+    riskScore: 88.2,
+    riskLevel: "CRITICAL",
+    description: "Riverine city along the Brahmaputra highly susceptible to flash floods, landslides, and seasonal monsoonal inundation."
   }
 ];
 
@@ -156,6 +179,84 @@ const mockWards = [
         ]]
       }
     })
+  },
+  // Hyderabad Wards
+  {
+    cityName: "Hyderabad",
+    name: "Hyderabad - Begumpet (Low-Lying Area)",
+    riskScore: 78.0,
+    riskLevel: "HIGH",
+    boundaryJson: JSON.stringify({
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [78.450, 17.430],
+          [78.490, 17.430],
+          [78.490, 17.460],
+          [78.450, 17.460],
+          [78.450, 17.430]
+        ]]
+      }
+    })
+  },
+  {
+    cityName: "Hyderabad",
+    name: "Hyderabad - Khairatabad (Central)",
+    riskScore: 58.5,
+    riskLevel: "MEDIUM",
+    boundaryJson: JSON.stringify({
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [78.440, 17.390],
+          [78.480, 17.390],
+          [78.480, 17.425],
+          [78.440, 17.425],
+          [78.440, 17.390]
+        ]]
+      }
+    })
+  },
+  // Guwahati Wards
+  {
+    cityName: "Guwahati",
+    name: "Guwahati - Zoo Road (Commercial)",
+    riskScore: 92.0,
+    riskLevel: "CRITICAL",
+    boundaryJson: JSON.stringify({
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [91.760, 26.145],
+          [91.800, 26.145],
+          [91.800, 26.175],
+          [91.760, 26.175],
+          [91.760, 26.145]
+        ]]
+      }
+    })
+  },
+  {
+    cityName: "Guwahati",
+    name: "Guwahati - Anil Nagar (Inundation Zone)",
+    riskScore: 94.5,
+    riskLevel: "CRITICAL",
+    boundaryJson: JSON.stringify({
+      type: "Feature",
+      geometry: {
+        type: "Polygon",
+        coordinates: [[
+          [91.740, 26.160],
+          [91.780, 26.160],
+          [91.780, 26.190],
+          [91.740, 26.190],
+          [91.740, 26.160]
+        ]]
+      }
+    })
   }
 ];
 
@@ -232,6 +333,36 @@ const mockIncidents = [
     severity: "MEDIUM",
     status: "INVESTIGATING",
     assignedTo: "GCC Engineering Squad B"
+  },
+  // Hyderabad
+  {
+    cityName: "Hyderabad",
+    wardName: "Hyderabad - Begumpet (Low-Lying Area)",
+    reporterName: "Kiran Reddy",
+    reporterPhone: "+919900887766",
+    latitude: 17.442,
+    longitude: 78.472,
+    description: "Begumpet main road waterlogged near metro station. Heavy block in the stormwater channel causes backflow onto roads.",
+    aiLabel: "FLOODED_ROAD",
+    aiConfidence: 0.94,
+    severity: "HIGH",
+    status: "REPORTED",
+    assignedTo: null
+  },
+  // Guwahati
+  {
+    cityName: "Guwahati",
+    wardName: "Guwahati - Zoo Road (Commercial)",
+    reporterName: "Jiten Boro",
+    reporterPhone: "+919855443322",
+    latitude: 26.160,
+    longitude: 91.778,
+    description: "RG Baruah Road (Zoo Road) under waist-deep water. Landslide mud has blocked the local drains, overflow is severe.",
+    aiLabel: "BLOCKED_DRAIN",
+    aiConfidence: 0.98,
+    severity: "CRITICAL",
+    status: "DISPATCHED",
+    assignedTo: "Guwahati Municipal Corp Response Team"
   }
 ];
 
@@ -253,11 +384,28 @@ const mockAlerts = [
     title: "Velachery Inundation Warning",
     message: "Velachery main road subway closed. Residents advised to avoid waterlogged underpasses.",
     severity: "DANGER"
+  },
+  {
+    cityName: "Hyderabad",
+    title: "Begumpet Stormwater Inundation Warning",
+    message: "Begumpet drainage channel overflows. Commuters are advised to avoid Rasoolpura and Begumpet routes.",
+    severity: "WARNING"
+  },
+  {
+    cityName: "Guwahati",
+    title: "Zoo Road Flash Flood Alert",
+    message: "Heavy monsoonal precipitation causing flash floods on RG Baruah road. Avoid low-lying sectors near Anil Nagar.",
+    severity: "DANGER"
   }
 ];
 
 async function main() {
   console.log("Cleaning database...");
+  await prisma.copilotConversation.deleteMany();
+  await prisma.copilotInsight.deleteMany();
+  await prisma.satelliteImage.deleteMany();
+  await prisma.digitalTwinScenario.deleteMany();
+  await prisma.floodPrediction.deleteMany();
   await prisma.emergencyAlert.deleteMany();
   await prisma.incidentReport.deleteMany();
   await prisma.ward.deleteMany();
@@ -324,6 +472,62 @@ async function main() {
         ...rest,
         cityId: cities[cityName].id,
         isActive: true
+      }
+    });
+  }
+
+  console.log("Seeding Predictions via Engine...");
+  for (const cityName of Object.keys(cities)) {
+    const city = cities[cityName];
+    await generateForecastsForCity(city.id);
+  }
+
+  console.log("Seeding Digital Twin Scenarios & Polygons...");
+  for (const cityName of Object.keys(cities)) {
+    const city = cities[cityName];
+    // Pre-seed 3h, 6h, 12h, 24h simulations
+    const windows = [3, 6, 12, 24];
+    for (const hours of windows) {
+      await runDigitalTwinSimulation(city.id, 35, hours);
+    }
+  }
+
+  console.log("Seeding Satellite imagery & detected flood zones...");
+  for (const cityName of Object.keys(cities)) {
+    const city = cities[cityName];
+    await runSatelliteFloodAnalysis(city.id, "Sentinel-1 SAR");
+    await runSatelliteFloodAnalysis(city.id, "Sentinel-2 NDWI");
+  }
+
+  console.log("Seeding Copilot conversations & insights...");
+  for (const cityName of Object.keys(cities)) {
+    const city = cities[cityName];
+    
+    // Seed initial greeting/sample conversation
+    await prisma.copilotConversation.create({
+      data: {
+        cityId: city.id,
+        userQuery: "Summarize city flood status.",
+        aiResponse: JSON.stringify({
+          summary: `### Operations Summary for ${city.name}\nWeather systems report stable conditions. Risk indexes in central wards remain below critical levels. Drainage lines are functioning normally.`,
+          evidence: ["Active reports size: 0.", "Average city ward readiness: 85%."],
+          confidence: 95,
+          recommendedActions: ["Execute standard hourly predictive updates.", "Monitor local drainage inlets."]
+        }),
+        evidence: JSON.stringify(["Active reports size: 0.", "Average city ward readiness: 85%."]),
+        confidence: 95,
+        actions: JSON.stringify(["Execute standard hourly predictive updates.", "Monitor local drainage inlets."])
+      }
+    });
+
+    // Seed initial insight
+    await prisma.copilotInsight.create({
+      data: {
+        cityId: city.id,
+        summary: `Command Center summary compiled for ${city.name}. Sensor networks show low risk levels. Wards risk levels remain stable under current precipitation loads.`,
+        recommendations: JSON.stringify(["Verify standby crew locations.", "Perform standard gauge checks."]),
+        alerts: JSON.stringify(["No warnings in effect."]),
+        wardRankings: JSON.stringify([])
       }
     });
   }

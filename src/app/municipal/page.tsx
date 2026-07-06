@@ -5,8 +5,9 @@ import Navigation from "../../components/Navigation";
 import MapLoader from "../../components/MapLoader";
 import { 
   Landmark, Users, Clock, AlertTriangle, CloudRain, Send, Settings2, 
-  CheckCircle2, Filter, ArrowUpDown, ChevronRight, ShieldAlert, BarChart3
+  CheckCircle2, Filter, ArrowUpDown, ChevronRight, ShieldAlert, BarChart3, Bot
 } from "lucide-react";
+import MunicipalCopilot from "../../components/MunicipalCopilot";
 
 export default function MunicipalPage() {
   const [wards, setWards] = useState<any[]>([]);
@@ -28,6 +29,8 @@ export default function MunicipalPage() {
   const [status, setStatus] = useState("");
   const [severity, setSeverity] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [runningPrediction, setRunningPrediction] = useState(false);
+  const [copilotOpen, setCopilotOpen] = useState(false);
 
   const loadData = (rainfallVal?: number, targetCityId?: string) => {
     const cityIdToUse = targetCityId || activeCityId || localStorage.getItem("floodpulse_city") || "";
@@ -99,6 +102,28 @@ export default function MunicipalPage() {
     const val = parseFloat(e.target.value);
     setSimulatedRainfall(val);
     loadData(val);
+  };
+
+  const handleTriggerAI = async () => {
+    setRunningPrediction(true);
+    try {
+      const res = await fetch("/api/predictions/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cityId: activeCityId })
+      });
+      if (res.ok) {
+        alert("AI Flood Forecast updated successfully using Open-Meteo forecasts!");
+        loadData();
+      } else {
+        alert("Failed to run prediction engine.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Error executing AI forecast model.");
+    } finally {
+      setRunningPrediction(false);
+    }
   };
 
   const handleUpdateIncident = async (e: React.FormEvent) => {
@@ -184,6 +209,30 @@ export default function MunicipalPage() {
   const activeReportsCount = incidents.filter(i => i.status !== "RESOLVED").length;
   const criticalHotspotsCount = incidents.filter(i => i.status !== "RESOLVED" && i.severity === "CRITICAL").length;
   const criticalWardsCount = wards.filter(w => w.riskLevel === "CRITICAL" || w.riskLevel === "HIGH").length;
+
+  // Get prediction data for Top 5 Risk Wards (based on 6h window)
+  const highRiskWards = wards
+    .map(w => {
+      const pred = w.predictions?.find((p: any) => p.predictionWindow === "6h");
+      return {
+        id: w.id,
+        name: w.name.split(":")[0],
+        probability: pred ? pred.probability : 0,
+        severity: pred ? pred.severity : "LOW",
+        reasoning: pred ? pred.reasoning : "No current threat."
+      };
+    })
+    .sort((a, b) => b.probability - a.probability)
+    .slice(0, 5);
+
+  const predictiveCriticalCount = wards.filter(w => {
+    const p = w.predictions?.find((p: any) => p.predictionWindow === "6h");
+    return p && p.probability > 70;
+  }).length;
+
+  const resourcePumps = predictiveCriticalCount * 2;
+  const resourceSandbags = predictiveCriticalCount * 250;
+  const resourceCrews = Math.ceil(predictiveCriticalCount * 1.5);
 
   return (
     <div className="flex-1 flex flex-col bg-slate-950 text-slate-100 min-h-screen">
@@ -314,14 +363,103 @@ export default function MunicipalPage() {
           </div>
         </div>
 
-        {/* Center Panel: Map (2 Cols) */}
-        <div className="lg:col-span-2 h-[calc(100vh-3.5rem)] relative">
-          <MapLoader
-            wards={wards}
-            incidents={incidents}
-            selectedIncident={selectedIncident}
-            onSelectIncident={setSelectedIncident}
-          />
+        {/* Center Panel: Map & AI Prediction Analytics (2 Cols) */}
+        <div className="lg:col-span-2 h-[calc(100vh-3.5rem)] flex flex-col overflow-y-auto">
+          {/* Map Section */}
+          <div className="h-[55%] min-h-[360px] relative border-b border-slate-900">
+            <MapLoader
+              wards={wards}
+              incidents={incidents}
+              selectedIncident={selectedIncident}
+              onSelectIncident={setSelectedIncident}
+            />
+          </div>
+
+          {/* AI Predictive Intelligence Section */}
+          <div className="h-[45%] bg-slate-950 p-4 overflow-y-auto space-y-4">
+            <div className="flex justify-between items-center border-b border-slate-900 pb-2.5">
+              <div>
+                <span className="text-[9px] text-blue-400 font-extrabold uppercase tracking-widest flex items-center gap-1">
+                  <CloudRain className="h-3 w-3" /> Predictive Forecast Dashboard
+                </span>
+                <h3 className="text-sm font-bold text-slate-100 mt-0.5">AI Flood Risk Analysis & Resource Planning</h3>
+              </div>
+              <button
+                onClick={handleTriggerAI}
+                disabled={runningPrediction}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:from-slate-800 disabled:to-slate-800 text-white font-bold text-[10px] px-3.5 py-1.5 rounded-lg border border-blue-500/30 transition-all flex items-center gap-1.5 cursor-pointer shadow-md shadow-blue-900/10"
+              >
+                {runningPrediction ? "Running AI Models..." : "Trigger AI Predictions"}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Top High-Risk Wards (6h Forecast) */}
+              <div className="bg-slate-900/30 border border-slate-900/80 rounded-xl p-3.5 space-y-3">
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Top 5 Wards at Flood Risk (6h Forecast)</h4>
+                <div className="space-y-2.5">
+                  {highRiskWards.length === 0 ? (
+                    <p className="text-[11px] text-slate-500">No predictions generated. Click trigger predictions.</p>
+                  ) : (
+                    highRiskWards.map((w, idx) => (
+                      <div key={w.id} className="space-y-1">
+                        <div className="flex justify-between text-xs font-semibold">
+                          <span className="text-slate-300">{idx + 1}. {w.name}</span>
+                          <span className={`text-[10px] font-bold ${
+                            w.severity === "CRITICAL" ? "text-red-400" :
+                            w.severity === "HIGH" ? "text-orange-400" :
+                            "text-yellow-400"
+                          }`}>{w.probability}% ({w.severity})</span>
+                        </div>
+                        <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-900">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              w.severity === "CRITICAL" ? "bg-red-500" :
+                              w.severity === "HIGH" ? "bg-orange-500" :
+                              "bg-yellow-500"
+                            }`}
+                            style={{ width: `${w.probability}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Resource Planning Panel */}
+              <div className="bg-slate-900/30 border border-slate-900/80 rounded-xl p-3.5 flex flex-col justify-between">
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Emergency Resource Pre-Planning</h4>
+                  <p className="text-[11px] text-slate-400 leading-normal mb-3">
+                    Calculated logistical mobilization based on wards forecasting above **70%** probability:
+                  </p>
+                  
+                  <div className="grid grid-cols-3 gap-2.5 text-center">
+                    <div className="bg-slate-950 p-2 rounded-lg border border-slate-900">
+                      <span className="block text-lg font-black text-blue-400">{resourcePumps}</span>
+                      <span className="text-[9px] text-slate-500 font-bold uppercase block">Pumps Reqd</span>
+                    </div>
+                    <div className="bg-slate-950 p-2 rounded-lg border border-slate-900">
+                      <span className="block text-lg font-black text-amber-400">{resourceSandbags}</span>
+                      <span className="text-[9px] text-slate-500 font-bold uppercase block">Sandbags</span>
+                    </div>
+                    <div className="bg-slate-950 p-2 rounded-lg border border-slate-900">
+                      <span className="block text-lg font-black text-emerald-400">{resourceCrews}</span>
+                      <span className="text-[9px] text-slate-500 font-bold uppercase block">Squads</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-2 border-t border-slate-900/60 text-[10px] text-slate-400 flex items-center justify-between">
+                  <span>Target Readiness:</span>
+                  <span className="font-extrabold text-slate-200">
+                    {predictiveCriticalCount > 0 ? "Mobilize Instantly" : "Normal Standby"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right Side: Command Center Details */}
@@ -487,6 +625,20 @@ export default function MunicipalPage() {
         </div>
 
       </div>
+
+      {/* Floating AI Copilot Toggle Button */}
+      <button
+        onClick={() => setCopilotOpen(true)}
+        className="fixed bottom-6 right-6 z-[2500] bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 text-white font-bold p-3.5 rounded-full shadow-xl shadow-indigo-950/40 flex items-center justify-center cursor-pointer border border-indigo-400/30 transition-transform active:scale-95 animate-bounce hover:animate-none"
+      >
+        <Bot className="h-6 w-6" />
+      </button>
+
+      <MunicipalCopilot
+        cityId={activeCityId}
+        isOpen={copilotOpen}
+        onClose={() => setCopilotOpen(false)}
+      />
     </div>
   );
 }
