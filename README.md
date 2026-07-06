@@ -158,3 +158,81 @@ $$\text{Risk Score (0-100)} = R_{rainfall} (30\%) + E_{elevation} (20\%) + P_{pr
    npm run dev
    ```
    Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+---
+
+## 📊 Pitch Deck / Presentation Guide (10-Slide Structure)
+
+Use this high-impact structure to compile the ultimate hackathon pitch deck for **FloodPulse AI**:
+
+### Slide 1: The Title & Hook
+* **Title**: FloodPulse AI
+* **Subtitle**: Hyperlocal Flood & Drainage Risk Intelligence for Smart Cities
+* **Visual Hook Ideas**: Dark-mode mockup of the live interactive GIS map with glowing critical risk zones and satellite overlays.
+* **Key Message**: A real-time, multi-city climate-resilience platform bridging the gap between citizens, municipal engineers, and disaster response teams.
+
+### Slide 2: The Problem
+* **Header**: The Cost of Urban Inundation
+* **Key Bullet Points**:
+  * **Critical Blindspots**: Municipalities lack real-time, block-by-block GIS visibility of waterlogging and clogged drains.
+  * **Fragmented Data**: Weather reports, citizen complaints, and satellite imagery operate in silos.
+  * **Economic & Human Cost**: Flooded streets block emergency services, damage infrastructure, and disrupt millions of lives.
+* **Metric Callout**: *Urban flooding damages cost global smart cities billions annually, with response delays measured in hours instead of minutes.*
+
+### Slide 3: The Solution
+* **Header**: FloodPulse AI: The Unified Command Center
+* **Key Bullet Points**:
+  * **Unified GIS Portal**: Integrates active citizen reports, sensor simulations, and satellite remote sensing.
+  * **Intelligent Routing**: Keeps citizens safe via dynamically adjusted detour routing avoiding active hazard zones.
+  * **Proactive Response**: Empowers municipal officials with real-time risk maps, rainfall simulators, and automated workforce dispatching.
+
+### Slide 4: Feature Focus — Interactive GIS & Smart Safe Routing
+* **Header**: Localized Reporting & Dynamic Obstacle Detouring
+* **Key Bullet Points**:
+  * **Hyperlocal Pinpointing**: Zero-shot AI classifies citizen reports (e.g. `FLOODED_ROAD` vs `BLOCKED_DRAIN`) and auto-assigns priority.
+  * **Point-in-Polygon Engine**: Instantly associates coordinates with municipal boundaries using ray-casting.
+  * **Safe-Route Algorithm**: Calculates detours with a 250m perpendicular offset buffer around active critical hazard zones.
+
+### Slide 5: Feature Focus — Digital Twin Simulation Engine
+* **Header**: Predictive Inundation & Impact Modeling
+* **Key Bullet Points**:
+  * **Real-time Recalculation**: Adjust a live rainfall slider to see instant ward-level risk score updates.
+  * **Physics-based Inundation**: Models elevation profiles, drainage capacity, and water accumulation over time.
+  * **Impact Assessment**: Instantly displays projected metrics for road damage (km) and affected populations to optimize prevention plans.
+
+### Slide 6: Feature Focus — Remote Sensing & Satellite Analytics
+* **Header**: Space-Based Flood Detection
+* **Key Bullet Points**:
+  * **Dual-Satellite Processing**: Support for Sentinel-1 SAR (Radar backscatter) and Sentinel-2 NDWI (Multi-spectral imagery).
+  * **Sentinel Hub Integration**: Leverages optimized evalscripts (NDWI water index thresholds) to process live space-borne captures.
+  * **Precision Overlays**: Translates complex satellite band data into interactive GIS overlays with confidence scores.
+
+### Slide 7: Feature Focus — Role-Based AI Copilots
+* **Header**: Multi-Role Spatial Agents
+* **Key Bullet Points**:
+  * **Citizen Copilot**: Explains local risks, helps submit geolocated reports, and suggests safe travel routes.
+  * **Municipal Copilot**: Triages incident queues, auto-dispatches maintenance crews, and runs scenario simulations.
+  * **Autonomous Tool Calling**: LLM planning agent equipped with dynamic API tools to fetch, edit, and analyze platform data.
+
+### Slide 8: Technical Architecture & Production-Grade Stack
+* **Header**: Engineered for Scale & Zero-Latency Response
+* **Key Bullet Points**:
+  * **Framework**: Next.js 15 (App Router) & TypeScript for a fast, responsive UI.
+  * **Data Layer**: Prisma 7 ORM with SQLite (custom geospatial adapters simulating PostGIS).
+  * **GIS Layer**: Leaflet.js with ESRI World Imagery base maps, geocoding, and custom vector overlays.
+  * **AI Stack**: HuggingFace NLP models (zero-shot classification) + OpenRouter LLM orchestration.
+
+### Slide 9: Market Fit & Future Scalability
+* **Header**: Scaling Beyond Hackathons
+* **Key Bullet Points**:
+  * **B2G (Business-to-Government)**: Command dashboards sold to smart city municipal corporations.
+  * **B2B Integration**: API licenses for logistics, ride-sharing (safe routing), and property insurance risk modeling.
+  * **Community Ecosystem**: Crowdsourced reporting rewards and gamified civic engagement incentives.
+
+### Slide 10: The Vision & Future Roadmap
+* **Header**: Engineering a Climate-Resilient Tomorrow
+* **Key Bullet Points**:
+  * **Phase 1 (Done)**: Live interactive GIS map, multi-city data seeding, Digital Twin simulator, Satellite NDWI/SAR, and AI Copilots.
+  * **Phase 2 (Next)**: IoT sensor array integration (ultrasonic water level sensors in sewers) and real-time WebSockets synchronization.
+  * **Call to Action**: *FloodPulse AI doesn't just track floods—it predicts, detours, and dispatches to save lives.*
+
